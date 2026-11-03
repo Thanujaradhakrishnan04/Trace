@@ -42,3 +42,6 @@ server/prepare_user.cjs
 
 # Vite cache
 .vite/
+
+# Temporary Office Lock Files
+~$*

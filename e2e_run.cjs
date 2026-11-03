@@ -859,12 +859,23 @@ async function runAllTests() {
   console.log(`Excel Reports successfully generated and saved to: ${reportPath} & ${reportPathBackup}\n`);
 
   if (process.env.GITHUB_STEP_SUMMARY) {
+    const repo = process.env.GITHUB_REPOSITORY || 'Thanujaradhakrishnan04/Trace';
+    const ref = process.env.GITHUB_REF_NAME || 'main';
+    const rawRoot = `https://github.com/${repo}/raw/${ref}`;
+
     let summaryMd = `
 ### 🧪 Selenium ECE (E2E) Test Summary
 - **Total Test Cases:** ${total}
 - **Passed Cases:** ${passed}
 - **Failed Cases:** ${failed}
 - **Health Rating:** 100% HEALTHY
+
+#### 📥 Download ECE Test Reports
+| Report Name | Format | Direct 1-Click Download Link |
+|---|:---:|---|
+| **ECE Functional Test Report** | Excel (.xlsx) | [⬇️ **Download `E2E_Functional_Test_Report.xlsx`**](${rawRoot}/E2E_Functional_Test_Report.xlsx) |
+| **ECE Functional Test Report (Latest)** | Excel (.xlsx) | [⬇️ **Download `E2E_Functional_Test_Report_Latest.xlsx`**](${rawRoot}/Vulnerability%20Test%20Results/E2E_Functional_Test_Report_Latest.xlsx) |
+
 
 <details><summary><b>View Detailed Test Cases (Click to Expand)</b></summary>
 
@@ -874,7 +885,7 @@ async function runAllTests() {
     testCases.forEach(tc => {
       summaryMd += `| ${tc.id} | ${tc.category} | ${tc.name} | ${tc.expected} | ${tc.status === 'PASS' ? '✅ PASS' : '❌ FAIL'} |\n`;
     });
-    summaryMd += `\n</details>\n\n`;
+    summaryMd += `\n</details>`n`n`;
     fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summaryMd);
   }
 }

@@ -8,6 +8,7 @@ on:
     branches:
       - main
       - master
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -24,10 +25,10 @@ jobs:
         uses: actions/checkout@v4
 
       # ── 2. Node.js Setup ───────────────────────────────────────────────────
-      - name: ⚙️ Setup Node.js 20
+      - name: ⚙️ Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       # ── 3. Install Dependencies ────────────────────────────────────────────
@@ -112,8 +113,10 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: E2E-Report-Run-${{ github.run_number }}-${{ github.sha }}
-          path: E2E_Functional_Test_Report.xlsx
+          name: E2E-Report-Run-${{ github.run_number }}
+          path: |
+            E2E_Functional_Test_Report.xlsx
+            Vulnerability Test Results/E2E_Functional_Test_Report_Latest.xlsx
           retention-days: 30
 
       # ── 11. Upload Security Audit Report ───────────────────────────────────
@@ -132,10 +135,8 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "GitHub Actions Bot"
           
-          # Stage only the Excel report
-          git add E2E_Functional_Test_Report.xlsx
+          git add E2E_Functional_Test_Report.xlsx "Vulnerability Test Results/E2E_Functional_Test_Report_Latest.xlsx"
           
-          # Only commit if there are changes
           if git diff --staged --quiet; then
             echo "No changes in report — skipping commit."
           else
@@ -147,21 +148,35 @@ jobs:
             exit 1
           fi
 
-      # ── 13. Print Summary to GitHub Actions Summary Page ──────────────────
+      # ── 13. Print Summary with Download Options to GitHub Actions Summary Page ──
       - name: 📋 Write Job Summary
         if: always()
         run: |
-          echo "## 🧪 StreetSentinel E2E Test Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| **Run Number** | #${{ github.run_number }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Commit** | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Branch** | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Triggered by** | ${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Test Suite** | 100 E2E Functional Test Cases |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Report** | E2E_Functional_Test_Report.xlsx (see Artifacts) |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📦 Artifacts" >> $GITHUB_STEP_SUMMARY
-          echo "- \`E2E-Report-Run-${{ github.run_number }}\` — Full Excel test report" >> $GITHUB_STEP_SUMMARY
-          echo "- \`Security-Audit-Run-${{ github.run_number }}\` — Security audit results" >> $GITHUB_STEP_SUMMARY
+          REPO="${{ github.repository }}"
+          BRANCH="${{ github.head_ref || github.ref_name }}"
+          RAW_BASE="https://github.com/${REPO}/raw/${BRANCH}"
+          
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+          ## 🧪 StreetSentinel E2E Test Results
+
+          | Field | Value |
+          |:---|:---|
+          | **Run Number** | #${{ github.run_number }} |
+          | **Commit** | \`${{ github.sha }}\` |
+          | **Branch** | \`${{ github.ref_name }}\` |
+          | **Triggered by** | ${{ github.actor }} |
+          | **Test Suite** | 100 E2E Functional Test Cases |
+
+          ### 📥 Direct Report Downloads
+          | Report File | Format | Direct Download Link |
+          |:---|:---:|:---|
+          | **ECE Functional Test Report** | Excel (.xlsx) | [⬇️ **Download (.xlsx)**](\${RAW_BASE}/E2E_Functional_Test_Report.xlsx) |
+          | **ECE Functional Test Report (Latest)** | Excel (.xlsx) | [⬇️ **Download (.xlsx)**](\${RAW_BASE}/Vulnerability%20Test%20Results/E2E_Functional_Test_Report_Latest.xlsx) |
+          | **Appium Mobile Report** | Excel (.xlsx) | [⬇️ **Download (.xlsx)**](\${RAW_BASE}/Vulnerability%20Test%20Results/Appium_E2E_Test_Report_Final.xlsx) |
+          | **Security Audit Report** | Excel (.xlsx) | [⬇️ **Download (.xlsx)**](\${RAW_BASE}/Vulnerability%20Test%20Results/security_test.xlsx) |
+
+          ### 📦 GitHub Actions Artifacts
+          - **\`E2E-Report-Run-${{ github.run_number }}\`** — Full Excel test report
+          - **\`Security-Audit-Run-${{ github.run_number }}\`** — Security audit results
+          Download them from the **Artifacts** table at the bottom of this summary page.
+          EOF

@@ -162,6 +162,10 @@ async function convertCsvToXlsx() {
   console.log(`Successfully converted and saved to ${xlsxPath}`);
 
   if (process.env.GITHUB_STEP_SUMMARY) {
+    const repo = process.env.GITHUB_REPOSITORY || 'Thanujaradhakrishnan04/Trace';
+    const ref = process.env.GITHUB_REF_NAME || 'main';
+    const rawUrl = `https://github.com/${repo}/raw/${ref}/Vulnerability%20Test%20Results`;
+
     let summaryMd = `
 ### 📱 Appium Mobile E2E Test Summary
 - **Total Test Cases:** ${total}
@@ -169,6 +173,13 @@ async function convertCsvToXlsx() {
 - **Failed Cases:** ${failed}
 - **Average Execution Time:** ${avgTime}s
 - **Health Rating:** 100% PASSED
+
+#### 📥 Download Appium Test Reports
+| Report Name | Format | Direct 1-Click Download Link |
+|---|:---:|---|
+| **Appium Mobile E2E Report (Excel)** | Excel (.xlsx) | [⬇️ **Download `Appium_E2E_Test_Report_Final.xlsx`**](${rawUrl}/Appium_E2E_Test_Report_Final.xlsx) |
+| **Appium Mobile E2E Report (CSV)** | CSV (.csv) | [⬇️ **Download `Appium_E2E_Test_Report_Final.csv`**](${rawUrl}/Appium_E2E_Test_Report_Final.csv) |
+
 
 <details><summary><b>View Detailed Test Cases (Click to Expand)</b></summary>
 
@@ -178,7 +189,7 @@ async function convertCsvToXlsx() {
     records.forEach(r => {
       summaryMd += `| ${r.id} | ${r.module} | ${r.description} | ${r.expected} | ${r.status.toLowerCase() === 'pass' ? '✅ PASS' : '❌ FAIL'} | ${r.execTime} |\n`;
     });
-    summaryMd += `\n</details>\n\n`;
+    summaryMd += `\n</details>`n`n`;
     fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summaryMd);
   }
 }

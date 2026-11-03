@@ -96,7 +96,7 @@ function App() {
 
   return (
     <SimulationProvider>
-      <Router>
+      <Router basename={import.meta.env.BASE_URL}>
         <EmergencyOverlay />
         
         {/* Offline Mesh Network Banner */}

@@ -1,4 +1,4 @@
-name: 🏆 Comprehensive Test Suite (ECE, Appium, Security)
+name: 🏆 Comprehensive Test Suite & Website Deployment
 
 on:
   push:
@@ -13,6 +13,8 @@ on:
 permissions:
   contents: write
   actions: write
+  pages: write
+  id-token: write
 
 jobs:
   ece-test-report:
@@ -264,9 +266,13 @@ jobs:
           RAW_BASE="https://github.com/${REPO}/raw/${BRANCH}"
           
           cat >> $GITHUB_STEP_SUMMARY << EOF
-          # 📥 StreetSentinel Test Reports Download Center
+          # 📥 StreetSentinel Test Reports & Live Deployment
 
-          All automated test suites have completed execution. Download individual Excel/CSV reports directly via the links below, or download the consolidated ZIP bundle from the **Artifacts** section.
+          ### 🌐 Live Website Deployment
+          > 🚀 **Production URL:** [https://thanujaradhakrishnan04.github.io/Trace/](https://thanujaradhakrishnan04.github.io/Trace/)
+          > 📱 **PWA / Web App:** Available online 24/7 with SafeWalk, Emergency SOS & Audio Threat Detection.
+
+          ---
 
           ### 📊 Direct 1-Click Report Downloads
 
@@ -285,4 +291,75 @@ jobs:
           ### 📦 How to Download All Reports in One Click (Artifacts)
           1. Scroll down to the **Artifacts** table at the bottom of this run summary.
           2. Click on **\`All-Test-Reports-Bundle-${{ github.run_number }}\`** to immediately download the ZIP containing all Excel and CSV test reports.
+          EOF
+
+  deploy-website:
+    name: 🌐 Deploy Website to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: [download-all-reports]
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: 📦 Install Frontend Dependencies
+        run: npm ci
+
+      - name: 🔐 Create Production .env
+        run: |
+          cat > .env << 'ENVEOF'
+          VITE_FIREBASE_API_KEY=${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN=${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID=${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET=${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID=${{ secrets.VITE_FIREBASE_APP_ID }}
+          VITE_BACKEND_URL=https://street-sentinel-api.onrender.com
+          ENVEOF
+
+      - name: 🏗️ Build Website for GitHub Pages
+        run: |
+          sed -i "s/import basicSsl from '@vitejs\/plugin-basic-ssl';//g" vite.config.js
+          sed -i "s/basicSsl(),//g" vite.config.js
+          npm run build
+          # Enable SPA deep-link routing on GitHub Pages (serves index.html on 404)
+          cp dist/index.html dist/404.html
+        env:
+          NODE_ENV: production
+          VITE_BASE_PATH: /Trace/
+
+      - name: ⚙️ Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: 📦 Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      - name: 🚀 Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: 📋 Write Deployment Link to Job Summary
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          # 🚀 Website Deployed Successfully!
+
+          Your application is live and accessible at:
+          ### 🔗 [https://thanujaradhakrishnan04.github.io/Trace/](https://thanujaradhakrishnan04.github.io/Trace/)
+
+          | Environment | Live URL | Platform | Status |
+          |:---|:---|:---:|:---:|
+          | **Production Website** | [https://thanujaradhakrishnan04.github.io/Trace/](https://thanujaradhakrishnan04.github.io/Trace/) | GitHub Pages | 🟢 **ACTIVE** |
+
+          > **Note:** If visiting for the first time, allow 1–2 minutes for GitHub Pages DNS cache to propagate.
           EOF

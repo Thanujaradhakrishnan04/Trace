@@ -177,8 +177,8 @@ async function convertCsvToXlsx() {
 #### 📥 Download Appium Test Reports
 | Report Name | Format | Direct 1-Click Download Link |
 |---|:---:|---|
-| **Appium Mobile E2E Report (Excel)** | Excel (.xlsx) | [⬇️ **Download `Appium_E2E_Test_Report_Final.xlsx`**](${rawUrl}/Appium_E2E_Test_Report_Final.xlsx) |
-| **Appium Mobile E2E Report (CSV)** | CSV (.csv) | [⬇️ **Download `Appium_E2E_Test_Report_Final.csv`**](${rawUrl}/Appium_E2E_Test_Report_Final.csv) |
+| **Appium Mobile E2E Report (Excel)** | Excel (.xlsx) | [⬇️ **Download Appium_E2E_Test_Report_Final.xlsx**](${rawUrl}/Appium_E2E_Test_Report_Final.xlsx) |
+| **Appium Mobile E2E Report (CSV)** | CSV (.csv) | [⬇️ **Download Appium_E2E_Test_Report_Final.csv**](${rawUrl}/Appium_E2E_Test_Report_Final.csv) |
 
 
 <details><summary><b>View Detailed Test Cases (Click to Expand)</b></summary>
@@ -189,7 +189,7 @@ async function convertCsvToXlsx() {
     records.forEach(r => {
       summaryMd += `| ${r.id} | ${r.module} | ${r.description} | ${r.expected} | ${r.status.toLowerCase() === 'pass' ? '✅ PASS' : '❌ FAIL'} | ${r.execTime} |\n`;
     });
-    summaryMd += `\n</details>`n`n`;
+    summaryMd += '\n</details>\n\n';
     fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summaryMd);
   }
 }

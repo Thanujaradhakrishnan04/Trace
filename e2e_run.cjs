@@ -873,8 +873,8 @@ async function runAllTests() {
 #### 📥 Download ECE Test Reports
 | Report Name | Format | Direct 1-Click Download Link |
 |---|:---:|---|
-| **ECE Functional Test Report** | Excel (.xlsx) | [⬇️ **Download `E2E_Functional_Test_Report.xlsx`**](${rawRoot}/E2E_Functional_Test_Report.xlsx) |
-| **ECE Functional Test Report (Latest)** | Excel (.xlsx) | [⬇️ **Download `E2E_Functional_Test_Report_Latest.xlsx`**](${rawRoot}/Vulnerability%20Test%20Results/E2E_Functional_Test_Report_Latest.xlsx) |
+| **ECE Functional Test Report** | Excel (.xlsx) | [⬇️ **Download E2E_Functional_Test_Report.xlsx**](${rawRoot}/E2E_Functional_Test_Report.xlsx) |
+| **ECE Functional Test Report (Latest)** | Excel (.xlsx) | [⬇️ **Download E2E_Functional_Test_Report_Latest.xlsx**](${rawRoot}/Vulnerability%20Test%20Results/E2E_Functional_Test_Report_Latest.xlsx) |
 
 
 <details><summary><b>View Detailed Test Cases (Click to Expand)</b></summary>
@@ -885,7 +885,7 @@ async function runAllTests() {
     testCases.forEach(tc => {
       summaryMd += `| ${tc.id} | ${tc.category} | ${tc.name} | ${tc.expected} | ${tc.status === 'PASS' ? '✅ PASS' : '❌ FAIL'} |\n`;
     });
-    summaryMd += `\n</details>`n`n`;
+    summaryMd += '\n</details>\n\n';
     fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summaryMd);
   }
 }

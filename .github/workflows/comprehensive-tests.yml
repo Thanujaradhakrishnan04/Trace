@@ -426,7 +426,7 @@ jobs:
           VITE_FIREBASE_MESSAGING_SENDER_ID=${MESSAGING_ID:-166698346533}
           VITE_FIREBASE_APP_ID=${APP_ID:-1:166698346533:web:06cc4059099bcae7c1f7cc}
           VITE_FIREBASE_MEASUREMENT_ID=${MEASUREMENT_ID:-G-N2Q5VKTT9Z}
-          VITE_BACKEND_URL=https://street-sentinel-api.onrender.com
+          VITE_BACKEND_URL=https://street-patrol-y9p7.onrender.com
           ENVEOF
 
       - name: 🏗️ Build Website for GitHub Pages

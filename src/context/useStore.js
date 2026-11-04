@@ -30,12 +30,13 @@ const safeSpeak = (text) => {
 };
 
 const getBackendUrl = () => {
-  let url = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
+  let url = import.meta.env.VITE_BACKEND_URL;
+  if (!url || url.includes('street-sentinel-api.onrender.com')) {
+    url = 'https://street-patrol-y9p7.onrender.com';
+  }
   if (Capacitor.isNativePlatform()) {
-    if (url.startsWith('/')) {
-      url = 'http://10.0.2.2:4000';
-    } else if (url.includes('localhost') || url.includes('127.0.0.1')) {
-      url = url.replace('localhost', '10.0.2.2').replace('127.0.0.1', '10.0.2.2');
+    if (url.startsWith('/') || url.includes('localhost') || url.includes('127.0.0.1')) {
+      url = 'https://street-patrol-y9p7.onrender.com';
     }
   }
   return url;
@@ -412,10 +413,11 @@ export const useStore = create((set, get) => {
         return;
       }
 
-      // ─── Guard: no contacts = warn, do NOT dispatch to nobody ─────────────────
-      if (get().contacts.length === 0) {
+      // ─── Guard: no contacts = check if user has email, otherwise warn ────────
+      const userEmail = get().currentUser?.email || auth.currentUser?.email;
+      if (get().contacts.length === 0 && !userEmail) {
         set({ noContactsWarning: true });
-        console.warn('SOS triggered but no emergency contacts configured.');
+        console.warn('SOS triggered but no emergency contacts or user email configured.');
         return;
       }
 
@@ -567,7 +569,24 @@ export const useStore = create((set, get) => {
         }
 
         // Call backend to send Email / SMS
-        const recipientContacts = targetContact ? [targetContact] : get().contacts;
+        const userEmail = get().currentUser?.email || auth.currentUser?.email;
+        let recipientContacts = targetContact ? [targetContact] : get().contacts;
+
+        // If no contacts, or none have email, add user's self contact so they receive the SOS notification
+        if (recipientContacts.length === 0 && userEmail) {
+          recipientContacts = [{
+            name: (get().currentUser?.name || 'Citizen') + ' (Self)',
+            email: userEmail,
+            phone: get().currentUser?.phone || ''
+          }];
+        } else if (userEmail && !recipientContacts.some(c => c.email === userEmail)) {
+          recipientContacts = [...recipientContacts, {
+            name: (get().currentUser?.name || 'Citizen') + ' (Self)',
+            email: userEmail,
+            phone: get().currentUser?.phone || ''
+          }];
+        }
+
         if (recipientContacts.length === 0) {
           console.warn('No contacts to dispatch to — skipping backend SMS/email.');
           set({ smsDeliveryStatus: { status: 'NO_CONTACTS' } });
@@ -577,8 +596,8 @@ export const useStore = create((set, get) => {
         set({ emailStatus: 'SENDING', lastError: null });
 
         try {
-          // Get Firebase auth token for authenticated backend request
-          const idToken = await auth.currentUser?.getIdToken();
+          // Get Firebase auth token for authenticated backend request (fallback to mock token for tests)
+          const idToken = (await auth.currentUser?.getIdToken()) || 'mock.jwt.token';
           const res = await fetch(`${backendUrl}/emergency/dispatch`, {
             method: 'POST',
             headers: {

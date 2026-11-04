@@ -534,6 +534,7 @@ async function runLoadTest() {
 
     const summaryMd = `
 ### ⚡ Baseline Load Testing (100 VUs) Summary
+- **Live Production Website:** [🌐 https://thanujaradhakrishnan04.github.io/Trace/](https://thanujaradhakrishnan04.github.io/Trace/)
 - **Virtual Users (VUs):** ${VIRTUAL_USERS} Concurrent Users
 - **Test Duration:** ${totalDurationSec.toFixed(1)}s (1 Full Minute Continuous Load)
 - **Total Requests Handled:** ${totalRequests.toLocaleString()} requests

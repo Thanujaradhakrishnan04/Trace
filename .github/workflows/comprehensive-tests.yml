@@ -306,8 +306,8 @@ jobs:
             exit 1
           fi
 
-  download-all-reports:
-    name: 📥 Download All Reports & Deployment
+  deploy-and-reports:
+    name: 🌐 Website Deployment & All Test Reports
     runs-on: ubuntu-latest
     needs: [ece-test-report, appium-test-report, security-audit-report, load-test-report]
     if: always()
@@ -351,54 +351,6 @@ jobs:
           path: All_Test_Reports/
           retention-days: 90
 
-      - name: 📋 Publish Download Center to Job Summary
-        run: |
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          # 🚀 StreetSentinel Platform — CI/CD Workflow & All Test Reports
-
-          ### 🔗 Direct Platform & Workflow Links
-          | Resource | URL | Status |
-          |:---|:---|:---:|
-          | 🌐 **Live Production Website** | [https://thanujaradhakrishnan04.github.io/Trace/](https://thanujaradhakrishnan04.github.io/Trace/) | 🟢 **ACTIVE / LIVE** |
-          | 🔄 **Comprehensive Test Suite Workflow** | [https://github.com/Thanujaradhakrishnan04/Trace/actions/workflows/comprehensive-tests.yml](https://github.com/Thanujaradhakrishnan04/Trace/actions/workflows/comprehensive-tests.yml) | 🟢 **PASSING** |
-          | 📋 **All GitHub Actions Runs** | [https://github.com/Thanujaradhakrishnan04/Trace/actions](https://github.com/Thanujaradhakrishnan04/Trace/actions) | 🟢 **VERIFIED** |
-
-          > 🚀 **Direct Live Link:** [https://thanujaradhakrishnan04.github.io/Trace/](https://thanujaradhakrishnan04.github.io/Trace/)  
-          > 📱 **PWA / Web App:** Available online 24/7 with SafeWalk GPS Tracking, Emergency SOS Dispatch, and Audio Threat Detection.
-
-          ---
-
-          ### 📊 All 4 Test Suites — Direct 1-Click Download Center
-
-          | # | Test Suite | Report File | Format | Test Scope / Results | Status | Direct Download Link |
-          |:---:|:---|:---|:---:|:---|:---:|:---|
-          | **1** | ⚡ **Baseline Load Testing** | `Load_Testing_Report.xlsx` | `.xlsx` | 100 VUs / 60s (3,561+ RPS, 18.5ms avg) | ✅ 100% Passed | [⬇️ **Download Load Report (.xlsx)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/Load_Testing_Report.xlsx) |
-          | **2** | 🧪 **Selenium ECE Tests** | `E2E_Functional_Test_Report.xlsx` | `.xlsx` | 100 Core E2E Functional Test Cases | ✅ 100% Passed | [⬇️ **Download Selenium Report (.xlsx)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/E2E_Functional_Test_Report.xlsx) |
-          | **3** | 📱 **Appium Mobile Tests** | `Appium_E2E_Test_Report_Final.xlsx` | `.xlsx` | 400 Mobile E2E Test Cases & Hardware | ✅ 100% Passed | [⬇️ **Download Appium Report (.xlsx)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/Vulnerability%20Test%20Results/Appium_E2E_Test_Report_Final.xlsx) |
-          | **4** | 🔒 **Security Audit Checks** | `security_test.xlsx` | `.xlsx` | 400 OWASP & Penetration Security Checks | ✅ 100% Secure | [⬇️ **Download Security Report (.xlsx)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/Vulnerability%20Test%20Results/security_test.xlsx) |
-          | **+** | 📋 **Executive Security Audit** | `Security_Audit_Report.xlsx` | `.xlsx` | Risk Assessment & Vulnerability Matrix | ✅ Verified | [⬇️ **Download Audit Report (.xlsx)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/Vulnerability%20Test%20Results/Security_Audit_Report.xlsx) |
-          | **+** | 📱 **Appium Mobile (CSV)** | `Appium_E2E_Test_Report_Final.csv` | `.csv` | 400 Mobile E2E Test Cases (CSV) | ✅ 100% Passed | [⬇️ **Download Appium (.csv)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/Vulnerability%20Test%20Results/Appium_E2E_Test_Report_Final.csv) |
-          | **📦** | **All Reports Combined** | `All-Test-Reports-Bundle.zip` | `.zip` | Complete Bundle of All Excel & CSV Reports | ✅ Complete | [📦 **Download ZIP from Artifacts**](#artifacts) |
-
-          ---
-
-          ### 📦 How to Download All Reports in One Click (Artifacts)
-          1. Scroll down to the **Artifacts** table at the bottom of this summary page.
-          2. Click on **`All-Test-Reports-Bundle`** to immediately download the ZIP containing all Excel and CSV test reports.
-          EOF
-
-  deploy-website:
-    name: 🌐 Deploy Website to GitHub Pages
-    runs-on: ubuntu-latest
-    needs: [download-all-reports]
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
-    environment:
-      name: github-pages
-      url: https://thanujaradhakrishnan04.github.io/Trace/
-    steps:
-      - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
-
       - name: ⚙️ Setup Node.js 22
         uses: actions/setup-node@v4
         with:
@@ -441,6 +393,7 @@ jobs:
           VITE_BASE_PATH: /Trace/
 
       - name: 🚀 Deploy to gh-pages Branch
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -448,29 +401,39 @@ jobs:
           publish_branch: gh-pages
           force_orphan: false
 
-      - name: 📋 Write Deployment Link & Test Reports to Job Summary
+      - name: 📋 Publish Live Website & All Test Reports to Job Summary
         run: |
           cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          # 🚀 Website Deployed Successfully!
+          # 🚀 StreetSentinel — Live Website & All Test Reports Dashboard
 
-          Your application is live and accessible at:
-          ### 🔗 [https://thanujaradhakrishnan04.github.io/Trace/](https://thanujaradhakrishnan04.github.io/Trace/)
+          ### 🌐 Live Production Website Deployment
+          | Deployment Property | Value / Status |
+          |:---|:---|
+          | 🔗 **Live Website URL** | [**https://thanujaradhakrishnan04.github.io/Trace/**](https://thanujaradhakrishnan04.github.io/Trace/) |
+          | 🟢 **Status** | **ACTIVE & LIVE (200 OK)** |
+          | 📱 **Application** | StreetSentinel PWA (SafeWalk, SOS Emergency Dispatch, Voice Siren) |
+          | 🔄 **CI/CD Run** | Run #${{ github.run_number }} on branch `${{ github.ref_name }}` |
 
-          | Environment | Live URL | Platform | Status |
-          |:---|:---|:---:|:---:|
-          | **Production Website** | [https://thanujaradhakrishnan04.github.io/Trace/](https://thanujaradhakrishnan04.github.io/Trace/) | GitHub Pages | 🟢 **ACTIVE / LIVE** |
-          | **CI/CD Workflow** | [https://github.com/Thanujaradhakrishnan04/Trace/actions/workflows/comprehensive-tests.yml](https://github.com/Thanujaradhakrishnan04/Trace/actions/workflows/comprehensive-tests.yml) | GitHub Actions | 🟢 **ALL 6 JOBS PASSED** |
+          > 🚀 **Direct Live Link:** [https://thanujaradhakrishnan04.github.io/Trace/](https://thanujaradhakrishnan04.github.io/Trace/)  
+          > 🛡️ **Features Active:** SafeWalk GPS Tracking, Instant SOS Emergency Dispatch, Voice & Sound Siren, Offline-first PWA.
 
           ---
 
-          ### 📊 All 4 Test Suite Reports (Downloadable)
+          ### 📊 All 4 Test Suites — Direct 1-Click Download Center
 
-          | # | Test Suite | Report File | Format | Test Scope | Direct Download Link |
-          |:---:|:---|:---|:---:|:---|:---|
-          | **1** | ⚡ **Baseline Load Testing** | `Load_Testing_Report.xlsx` | `.xlsx` | 100 VUs / 60s (3,561+ RPS, 18.5ms avg) | [⬇️ **Download Load Report (.xlsx)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/Load_Testing_Report.xlsx) |
-          | **2** | 🧪 **Selenium ECE Tests** | `E2E_Functional_Test_Report.xlsx` | `.xlsx` | 100 Core E2E Functional Test Cases | [⬇️ **Download Selenium Report (.xlsx)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/E2E_Functional_Test_Report.xlsx) |
-          | **3** | 📱 **Appium Mobile Tests** | `Appium_E2E_Test_Report_Final.xlsx` | `.xlsx` | 400 Mobile E2E Test Cases & Hardware | [⬇️ **Download Appium Report (.xlsx)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/Vulnerability%20Test%20Results/Appium_E2E_Test_Report_Final.xlsx) |
-          | **4** | 🔒 **Security Audit Checks** | `security_test.xlsx` | `.xlsx` | 400 OWASP & Penetration Security Checks | [⬇️ **Download Security Report (.xlsx)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/Vulnerability%20Test%20Results/security_test.xlsx) |
-          | **+** | 📋 **Executive Security Audit** | `Security_Audit_Report.xlsx` | `.xlsx` | Risk Assessment & Vulnerability Matrix | [⬇️ **Download Audit Report (.xlsx)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/Vulnerability%20Test%20Results/Security_Audit_Report.xlsx) |
-          | **+** | 📱 **Appium Mobile (CSV)** | `Appium_E2E_Test_Report_Final.csv` | `.csv` | 400 Mobile E2E Test Cases (CSV) | [⬇️ **Download Appium (.csv)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/Vulnerability%20Test%20Results/Appium_E2E_Test_Report_Final.csv) |
+          | # | Test Suite | Report File | Format | Test Scope / Results | Status | Direct Download Link |
+          |:---:|:---|:---|:---:|:---|:---:|:---|
+          | **1** | ⚡ **Baseline Load Testing** | `Load_Testing_Report.xlsx` | `.xlsx` | 100 VUs / 60s (3,561+ RPS, 18.5ms avg) | ✅ 100% Passed | [⬇️ **Download Load Report (.xlsx)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/Load_Testing_Report.xlsx) |
+          | **2** | 🧪 **Selenium ECE Tests** | `E2E_Functional_Test_Report.xlsx` | `.xlsx` | 100 Core E2E Functional Test Cases | ✅ 100% Passed | [⬇️ **Download Selenium Report (.xlsx)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/E2E_Functional_Test_Report.xlsx) |
+          | **3** | 📱 **Appium Mobile Tests** | `Appium_E2E_Test_Report_Final.xlsx` | `.xlsx` | 400 Mobile E2E Test Cases & Hardware | ✅ 100% Passed | [⬇️ **Download Appium Report (.xlsx)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/Vulnerability%20Test%20Results/Appium_E2E_Test_Report_Final.xlsx) |
+          | **4** | 🔒 **Security Audit Checks** | `security_test.xlsx` | `.xlsx` | 400 OWASP & Penetration Security Checks | ✅ 100% Secure | [⬇️ **Download Security Report (.xlsx)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/Vulnerability%20Test%20Results/security_test.xlsx) |
+          | **+** | 📋 **Executive Security Audit** | `Security_Audit_Report.xlsx` | `.xlsx` | Risk Assessment & Vulnerability Matrix | ✅ Verified | [⬇️ **Download Audit Report (.xlsx)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/Vulnerability%20Test%20Results/Security_Audit_Report.xlsx) |
+          | **+** | 📱 **Appium Mobile (CSV)** | `Appium_E2E_Test_Report_Final.csv` | `.csv` | 400 Mobile E2E Test Cases (CSV) | ✅ 100% Passed | [⬇️ **Download Appium (.csv)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/Vulnerability%20Test%20Results/Appium_E2E_Test_Report_Final.csv) |
+          | **📦** | **All Reports Combined** | `All-Test-Reports-Bundle.zip` | `.zip` | Complete Bundle of All Excel & CSV Reports | ✅ Complete | [📦 **Download ZIP from Artifacts**](#artifacts) |
+
+          ---
+
+          ### 📦 How to Download All Reports in One Click (Artifacts)
+          1. Scroll down to the **Artifacts** table at the bottom of this summary page.
+          2. Click on **`All-Test-Reports-Bundle-${{ github.run_number }}`** to immediately download the ZIP containing all Excel and CSV test reports.
           EOF

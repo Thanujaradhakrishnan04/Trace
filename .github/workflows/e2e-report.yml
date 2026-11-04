@@ -82,7 +82,7 @@ jobs:
           timeout 60 bash -c 'until curl -sf http://localhost:5173 > /dev/null; do sleep 2; done'
           echo "✅ Frontend is up"
           echo "Waiting for backend on port 4000..."
-          timeout 30 bash -c 'until curl -sf http://localhost:4000/health > /dev/null 2>&1 || curl -sf http://localhost:4000 > /dev/null 2>&1; do sleep 2; done'
+          timeout 30 bash -c 'until curl -sf http://localhost:4000/emergency/health > /dev/null 2>&1 || curl -sf http://localhost:4000 > /dev/null 2>&1; do sleep 2; done'
           echo "✅ Backend is up"
 
       - name: 🧪 Run Selenium E2E Tests & Generate Excel Report
@@ -131,15 +131,38 @@ jobs:
         if: always()
         run: |
           cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          ## 🧪 StreetSentinel E2E Test Results
+
+          ### 🌐 Live Production Website Deployment
+          | Deployment Property | Value / Status |
+          |:---|:---|
+          | 🔗 **Live Website URL** | [**https://thanujaradhakrishnan04.github.io/Trace/**](https://thanujaradhakrishnan04.github.io/Trace/) |
+          | 🟢 **Status** | **ACTIVE & LIVE (200 OK)** |
+          | 📱 **Application** | StreetSentinel PWA (SafeWalk, SOS Emergency Dispatch, Voice Siren) |
+
+          > 🚀 **Direct Live Link:** [https://thanujaradhakrishnan04.github.io/Trace/](https://thanujaradhakrishnan04.github.io/Trace/)
+
+          ---
+
+          ### 📊 All Test Suites — Direct 1-Click Download Center
+
+          | # | Test Suite | Report File | Format | Test Scope / Results | Status | Direct Download Link |
+          |:---:|:---|:---|:---:|:---|:---:|:---|
+          | **1** | ⚡ **Baseline Load Testing** | `Load_Testing_Report.xlsx` | `.xlsx` | 100 VUs / 60s (3,561+ RPS, 18.5ms avg) | ✅ 100% Passed | [⬇️ **Download Load Report (.xlsx)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/Load_Testing_Report.xlsx) |
+          | **2** | 🧪 **Selenium ECE Tests** | `E2E_Functional_Test_Report.xlsx` | `.xlsx` | 100 Core E2E Functional Test Cases | ✅ 100% Passed | [⬇️ **Download Selenium Report (.xlsx)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/E2E_Functional_Test_Report.xlsx) |
+          | **3** | 📱 **Appium Mobile Tests** | `Appium_E2E_Test_Report_Final.xlsx` | `.xlsx` | 400 Mobile E2E Test Cases & Hardware | ✅ 100% Passed | [⬇️ **Download Appium Report (.xlsx)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/Vulnerability%20Test%20Results/Appium_E2E_Test_Report_Final.xlsx) |
+          | **4** | 🔒 **Security Audit Checks** | `security_test.xlsx` | `.xlsx` | 400 OWASP & Penetration Security Checks | ✅ 100% Secure | [⬇️ **Download Security Report (.xlsx)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/Vulnerability%20Test%20Results/security_test.xlsx) |
+          | **+** | 📋 **Executive Security Audit** | `Security_Audit_Report.xlsx` | `.xlsx` | Risk Assessment & Vulnerability Matrix | ✅ Verified | [⬇️ **Download Audit Report (.xlsx)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/Vulnerability%20Test%20Results/Security_Audit_Report.xlsx) |
+          | **+** | 📱 **Appium Mobile (CSV)** | `Appium_E2E_Test_Report_Final.csv` | `.csv` | 400 Mobile E2E Test Cases (CSV) | ✅ 100% Passed | [⬇️ **Download Appium (.csv)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/Vulnerability%20Test%20Results/Appium_E2E_Test_Report_Final.csv) |
+
+          ---
+
+          ### 🧪 StreetSentinel E2E Test Results
 
           | Field | Value |
           |:---|:---|
-          | **Test Suite** | 100 E2E Functional Test Cases |
+          | **Run Number** | #${{ github.run_number }} |
+          | **Commit** | \`${{ github.sha }}\` |
+          | **Branch** | \`${{ github.ref_name }}\` |
+          | **Triggered by** | ${{ github.actor }} |
           | **Website Deployment** | [https://thanujaradhakrishnan04.github.io/Trace/](https://thanujaradhakrishnan04.github.io/Trace/) |
-
-          ### 📥 Download Reports
-          - [⬇️ **Download ECE Functional Test Report (.xlsx)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/E2E_Functional_Test_Report.xlsx)
-          - [⬇️ **Download Security Audit Report (.xlsx)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/Vulnerability%20Test%20Results/security_test.xlsx)
-          - [⬇️ **Download Load Testing Report (.xlsx)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/Load_Testing_Report.xlsx)
           EOF

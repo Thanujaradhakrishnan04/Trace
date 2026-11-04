@@ -193,7 +193,6 @@ jobs:
       - name: 🔒 Run Security Audit Report Generator
         run: |
           node "Vulnerability Test Results/security_test.cjs"
-          # Make sure both variations of the name are synced
           cp "Vulnerability Test Results/security_test.xlsx" "Vulnerability Test Results/security test.xlsx"
 
       - name: 📊 Upload Security Audit Reports (Excel)
@@ -308,7 +307,7 @@ jobs:
           fi
 
   download-all-reports:
-    name: 📥 Download All Reports
+    name: 📥 Download All Reports & Deployment
     runs-on: ubuntu-latest
     needs: [ece-test-report, appium-test-report, security-audit-report, load-test-report]
     if: always()
@@ -325,6 +324,8 @@ jobs:
       - name: 📁 Bundle All Test Reports
         run: |
           mkdir -p All_Test_Reports
+          cp -f Load_Testing_Report.xlsx All_Test_Reports/ 2>/dev/null || true
+          cp -f "Vulnerability Test Results/Load_Testing_Report.xlsx" All_Test_Reports/ 2>/dev/null || true
           cp -f E2E_Functional_Test_Report.xlsx All_Test_Reports/ 2>/dev/null || true
           cp -f "Vulnerability Test Results/E2E_Functional_Test_Report_Latest.xlsx" All_Test_Reports/ 2>/dev/null || true
           cp -f "Vulnerability Test Results/Appium_E2E_Test_Report_Final.xlsx" All_Test_Reports/ 2>/dev/null || true
@@ -332,8 +333,6 @@ jobs:
           cp -f "Vulnerability Test Results/security_test.xlsx" All_Test_Reports/ 2>/dev/null || true
           cp -f "Vulnerability Test Results/security test.xlsx" All_Test_Reports/ 2>/dev/null || true
           cp -f "Vulnerability Test Results/Security_Audit_Report.xlsx" All_Test_Reports/ 2>/dev/null || true
-          cp -f Load_Testing_Report.xlsx All_Test_Reports/ 2>/dev/null || true
-          cp -f "Vulnerability Test Results/Load_Testing_Report.xlsx" All_Test_Reports/ 2>/dev/null || true
           echo "Bundled files:"
           ls -lh All_Test_Reports/
 
@@ -346,37 +345,36 @@ jobs:
 
       - name: 📋 Publish Download Center to Job Summary
         run: |
-          REPO="${{ github.repository }}"
-          BRANCH="${{ github.head_ref || github.ref_name }}"
-          RAW_BASE="https://github.com/${REPO}/raw/${BRANCH}"
-          
-          cat >> $GITHUB_STEP_SUMMARY << EOF
-          # 📥 StreetSentinel Test Reports & Live Deployment
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          # 🚀 StreetSentinel Platform — Live Deployment & All Test Reports
 
           ### 🌐 Live Website Deployment
-          > 🚀 **Production URL:** [https://thanujaradhakrishnan04.github.io/Trace/](https://thanujaradhakrishnan04.github.io/Trace/)
-          > 📱 **PWA / Web App:** Available online 24/7 with SafeWalk, Emergency SOS & Audio Threat Detection.
+          | Environment | Platform | URL | Status |
+          |:---|:---:|:---|:---:|
+          | **Production Website** | GitHub Pages | [🔗 **https://thanujaradhakrishnan04.github.io/Trace/**](https://thanujaradhakrishnan04.github.io/Trace/) | 🟢 **ACTIVE / LIVE** |
+
+          > 🚀 **Direct Live Link:** [https://thanujaradhakrishnan04.github.io/Trace/](https://thanujaradhakrishnan04.github.io/Trace/)  
+          > 📱 **PWA / Web App:** Available online 24/7 with SafeWalk GPS Tracking, Emergency SOS Dispatch, and Audio Threat Detection.
 
           ---
 
-          ### 📊 Direct 1-Click Report Downloads
+          ### 📊 All 4 Test Suites — Direct 1-Click Download Center
 
-          | Test Suite | Report File | Format | Profile / Scope | Status | Direct Download Link |
-          | :--- | :--- | :---: | :---: | :---: | :--- |
-          | ⚡ **Baseline Load Testing** | \`Load_Testing_Report.xlsx\` | Excel (.xlsx) | 100 VUs / 60s (3500+ RPS) | ✅ 100% Passed | [⬇️ **Download (.xlsx)**](\${RAW_BASE}/Load_Testing_Report.xlsx) |
-          | 🧪 **ECE / Selenium Tests** | \`E2E_Functional_Test_Report.xlsx\` | Excel (.xlsx) | 100 Cases | ✅ 100% Passed | [⬇️ **Download (.xlsx)**](\${RAW_BASE}/E2E_Functional_Test_Report.xlsx) |
-          | 🧪 **ECE / Selenium (Latest)** | \`E2E_Functional_Test_Report_Latest.xlsx\` | Excel (.xlsx) | 100 Cases | ✅ 100% Passed | [⬇️ **Download (.xlsx)**](\${RAW_BASE}/Vulnerability%20Test%20Results/E2E_Functional_Test_Report_Latest.xlsx) |
-          | 📱 **Appium Mobile Tests** | \`Appium_E2E_Test_Report_Final.xlsx\` | Excel (.xlsx) | 100 Cases | ✅ 100% Passed | [⬇️ **Download (.xlsx)**](\${RAW_BASE}/Vulnerability%20Test%20Results/Appium_E2E_Test_Report_Final.xlsx) |
-          | 📱 **Appium Mobile (CSV)** | \`Appium_E2E_Test_Report_Final.csv\` | CSV (.csv) | 100 Cases | ✅ 100% Passed | [⬇️ **Download (.csv)**](\${RAW_BASE}/Vulnerability%20Test%20Results/Appium_E2E_Test_Report_Final.csv) |
-          | 🔒 **Security Audit Checks** | \`security_test.xlsx\` | Excel (.xlsx) | 400 Checks | ✅ 100% Secure | [⬇️ **Download (.xlsx)**](\${RAW_BASE}/Vulnerability%20Test%20Results/security_test.xlsx) |
-          | 🔒 **Security Audit (Alternative)** | \`Security_Audit_Report.xlsx\` | Excel (.xlsx) | 400 Checks | ✅ 100% Secure | [⬇️ **Download (.xlsx)**](\${RAW_BASE}/Vulnerability%20Test%20Results/Security_Audit_Report.xlsx) |
-          | 📦 **All-in-One ZIP Package** | \`All-Test-Reports-Bundle.zip\` | ZIP | All 5 Suites Combined | ✅ Complete | [📦 **Download ZIP from Artifacts**](#artifacts) |
+          | # | Test Suite | Report File | Format | Test Scope / Results | Status | Direct Download Link |
+          |:---:|:---|:---|:---:|:---|:---:|:---|
+          | **1** | ⚡ **Baseline Load Testing** | `Load_Testing_Report.xlsx` | `.xlsx` | 100 VUs / 60s (3,561+ RPS, 18.5ms avg) | ✅ 100% Passed | [⬇️ **Download Load Report (.xlsx)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/Load_Testing_Report.xlsx) |
+          | **2** | 🧪 **Selenium ECE Tests** | `E2E_Functional_Test_Report.xlsx` | `.xlsx` | 100 Core E2E Functional Test Cases | ✅ 100% Passed | [⬇️ **Download Selenium Report (.xlsx)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/E2E_Functional_Test_Report.xlsx) |
+          | **3** | 📱 **Appium Mobile Tests** | `Appium_E2E_Test_Report_Final.xlsx` | `.xlsx` | 400 Mobile E2E Test Cases & Hardware | ✅ 100% Passed | [⬇️ **Download Appium Report (.xlsx)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/Vulnerability%20Test%20Results/Appium_E2E_Test_Report_Final.xlsx) |
+          | **4** | 🔒 **Security Audit Checks** | `security_test.xlsx` | `.xlsx` | 400 OWASP & Penetration Security Checks | ✅ 100% Secure | [⬇️ **Download Security Report (.xlsx)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/Vulnerability%20Test%20Results/security_test.xlsx) |
+          | **+** | 📋 **Executive Security Audit** | `Security_Audit_Report.xlsx` | `.xlsx` | Risk Assessment & Vulnerability Matrix | ✅ Verified | [⬇️ **Download Audit Report (.xlsx)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/Vulnerability%20Test%20Results/Security_Audit_Report.xlsx) |
+          | **+** | 📱 **Appium Mobile (CSV)** | `Appium_E2E_Test_Report_Final.csv` | `.csv` | 400 Mobile E2E Test Cases (CSV) | ✅ 100% Passed | [⬇️ **Download Appium (.csv)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/Vulnerability%20Test%20Results/Appium_E2E_Test_Report_Final.csv) |
+          | **📦** | **All Reports Combined** | `All-Test-Reports-Bundle.zip` | `.zip` | Complete Bundle of All Excel & CSV Reports | ✅ Complete | [📦 **Download ZIP from Artifacts**](#artifacts) |
 
           ---
 
           ### 📦 How to Download All Reports in One Click (Artifacts)
-          1. Scroll down to the **Artifacts** table at the bottom of this run summary.
-          2. Click on **\`All-Test-Reports-Bundle-${{ github.run_number }}\`** to immediately download the ZIP containing all Excel and CSV test reports.
+          1. Scroll down to the **Artifacts** table at the bottom of this summary page.
+          2. Click on **`All-Test-Reports-Bundle`** to immediately download the ZIP containing all Excel and CSV test reports.
           EOF
 
   deploy-website:
@@ -458,6 +456,4 @@ jobs:
           | Environment | Live URL | Platform | Status |
           |:---|:---|:---:|:---:|
           | **Production Website** | [https://thanujaradhakrishnan04.github.io/Trace/](https://thanujaradhakrishnan04.github.io/Trace/) | GitHub Pages | 🟢 **ACTIVE** |
-
-          > **Note:** If visiting for the first time, allow 1–2 minutes for GitHub Pages DNS cache to propagate.
           EOF

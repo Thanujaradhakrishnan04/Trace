@@ -1,13 +1,6 @@
 name: 🧪 E2E Test & Excel Report Generation
 
 on:
-  push:
-    branches:
-      - '**'
-  pull_request:
-    branches:
-      - main
-      - master
   workflow_dispatch:
 
 permissions:
@@ -20,18 +13,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # ── 1. Checkout ────────────────────────────────────────────────────────
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
 
-      # ── 2. Node.js Setup ───────────────────────────────────────────────────
       - name: ⚙️ Setup Node.js 22
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
 
-      # ── 3. Install Dependencies ────────────────────────────────────────────
       - name: 📦 Install Frontend Dependencies
         run: npm ci
 
@@ -39,7 +29,6 @@ jobs:
         run: npm ci
         working-directory: ./server
 
-      # ── 4. Write Environment Files ─────────────────────────────────────────
       - name: 🔐 Create Frontend .env
         run: |
           cat > .env << 'ENVEOF'
@@ -66,17 +55,14 @@ jobs:
           ENVEOF
         working-directory: ./server
 
-      # ── 5. Build Frontend (HTTP, no HTTPS plugin needed in CI) ─────────────
       - name: 🏗️ Build Frontend for CI
         run: |
-          # Temporarily remove basicSsl plugin for CI build
           sed -i "s/import basicSsl from '@vitejs\/plugin-basic-ssl';//g" vite.config.js
           sed -i "s/basicSsl(),//g" vite.config.js
           npm run build
         env:
           NODE_ENV: production
 
-      # ── 6. Start Backend Server ────────────────────────────────────────────
       - name: 🚀 Start Backend Server
         run: |
           cd server
@@ -85,13 +71,11 @@ jobs:
         env:
           PORT: 4000
 
-      # ── 7. Serve Built Frontend via HTTP ───────────────────────────────────
       - name: 🌐 Serve Frontend via HTTP
         run: |
           npx --yes serve@latest dist --listen 5173 --no-clipboard &
           echo "FRONTEND_PID=$!" >> $GITHUB_ENV
 
-      # ── 8. Wait for Both Servers to Be Ready ───────────────────────────────
       - name: ⏳ Wait for Servers to Be Ready
         run: |
           echo "Waiting for frontend on port 5173..."
@@ -101,14 +85,12 @@ jobs:
           timeout 30 bash -c 'until curl -sf http://localhost:4000/health > /dev/null 2>&1 || curl -sf http://localhost:4000 > /dev/null 2>&1; do sleep 2; done'
           echo "✅ Backend is up"
 
-      # ── 9. Run Selenium E2E Tests & Generate Excel Report ─────────────────
-      - name: 🧪 Run E2E Tests & Generate Excel Report
+      - name: 🧪 Run Selenium E2E Tests & Generate Excel Report
         run: node e2e_run.cjs
         env:
           BASE_URL: http://localhost:5173
           CI: 'true'
 
-      # ── 10. Upload Excel Report as Artifact ────────────────────────────────
       - name: 📊 Upload E2E Test Report (Excel)
         uses: actions/upload-artifact@v4
         if: always()
@@ -119,7 +101,6 @@ jobs:
             Vulnerability Test Results/E2E_Functional_Test_Report_Latest.xlsx
           retention-days: 30
 
-      # ── 11. Upload Security Audit Report ───────────────────────────────────
       - name: 🔒 Upload Security Audit Report
         uses: actions/upload-artifact@v4
         if: always()
@@ -128,9 +109,7 @@ jobs:
           path: Vulnerability Test Results/
           retention-days: 30
 
-      # ── 12. Commit & Push Updated Report Back to Repo ─────────────────────
       - name: 📤 Commit E2E Report to Repository
-        if: github.event_name == 'push'
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "GitHub Actions Bot"
@@ -148,35 +127,19 @@ jobs:
             exit 1
           fi
 
-      # ── 13. Print Summary with Download Options to GitHub Actions Summary Page ──
       - name: 📋 Write Job Summary
         if: always()
         run: |
-          REPO="${{ github.repository }}"
-          BRANCH="${{ github.head_ref || github.ref_name }}"
-          RAW_BASE="https://github.com/${REPO}/raw/${BRANCH}"
-          
-          cat >> $GITHUB_STEP_SUMMARY << EOF
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
           ## 🧪 StreetSentinel E2E Test Results
 
           | Field | Value |
           |:---|:---|
-          | **Run Number** | #${{ github.run_number }} |
-          | **Commit** | \`${{ github.sha }}\` |
-          | **Branch** | \`${{ github.ref_name }}\` |
-          | **Triggered by** | ${{ github.actor }} |
           | **Test Suite** | 100 E2E Functional Test Cases |
+          | **Website Deployment** | [https://thanujaradhakrishnan04.github.io/Trace/](https://thanujaradhakrishnan04.github.io/Trace/) |
 
-          ### 📥 Direct Report Downloads
-          | Report File | Format | Direct Download Link |
-          |:---|:---:|:---|
-          | **ECE Functional Test Report** | Excel (.xlsx) | [⬇️ **Download (.xlsx)**](\${RAW_BASE}/E2E_Functional_Test_Report.xlsx) |
-          | **ECE Functional Test Report (Latest)** | Excel (.xlsx) | [⬇️ **Download (.xlsx)**](\${RAW_BASE}/Vulnerability%20Test%20Results/E2E_Functional_Test_Report_Latest.xlsx) |
-          | **Appium Mobile Report** | Excel (.xlsx) | [⬇️ **Download (.xlsx)**](\${RAW_BASE}/Vulnerability%20Test%20Results/Appium_E2E_Test_Report_Final.xlsx) |
-          | **Security Audit Report** | Excel (.xlsx) | [⬇️ **Download (.xlsx)**](\${RAW_BASE}/Vulnerability%20Test%20Results/security_test.xlsx) |
-
-          ### 📦 GitHub Actions Artifacts
-          - **\`E2E-Report-Run-${{ github.run_number }}\`** — Full Excel test report
-          - **\`Security-Audit-Run-${{ github.run_number }}\`** — Security audit results
-          Download them from the **Artifacts** table at the bottom of this summary page.
+          ### 📥 Download Reports
+          - [⬇️ **Download ECE Functional Test Report (.xlsx)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/E2E_Functional_Test_Report.xlsx)
+          - [⬇️ **Download Security Audit Report (.xlsx)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/Vulnerability%20Test%20Results/security_test.xlsx)
+          - [⬇️ **Download Load Testing Report (.xlsx)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/Load_Testing_Report.xlsx)
           EOF

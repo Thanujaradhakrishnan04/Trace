@@ -154,6 +154,9 @@ function App() {
             <Route path="heatmap" element={<MockDashboard role="Admin Map" />} />
             <Route path="settings" element={<MockDashboard role="Admin Settings" />} />
           </Route>
+
+          {/* Catch-all Fallback Route */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
     </SimulationProvider>

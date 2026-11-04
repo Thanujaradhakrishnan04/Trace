@@ -29,6 +29,7 @@ import SystemHealth from './pages/citizen/SystemHealth';
 import CitizenChat from './pages/citizen/CitizenChat';
 import Diagnostics from './pages/citizen/Diagnostics';
 import EmergencyOverlay from './components/ui/EmergencyOverlay';
+import TestReportsModal from './components/ui/TestReportsModal';
 
 // Police Pages
 import PoliceLayout from './layouts/PoliceLayout';
@@ -98,18 +99,7 @@ function App() {
     <SimulationProvider>
       <Router basename={import.meta.env.BASE_URL}>
         <EmergencyOverlay />
-        
-        {/* Direct Link to CI/CD Workflow with All Test Reports */}
-        <a
-          href="https://github.com/Thanujaradhakrishnan04/Trace/actions/workflows/comprehensive-tests.yml"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="fixed top-3 right-3 z-50 flex items-center gap-1.5 px-3 py-1.5 bg-slate-900/90 text-white rounded-full shadow-lg border border-slate-700/80 text-xs font-semibold hover:bg-slate-800 transition-all hover:scale-105 backdrop-blur-sm group"
-          title="View All Test Reports & CI/CD Workflow"
-        >
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span className="text-[11px] font-bold tracking-wide">📊 CI Test Reports</span>
-        </a>
+        <TestReportsModal />
         
         {/* Offline Mesh Network Banner */}
         <AnimatePresence>

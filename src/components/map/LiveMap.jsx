@@ -91,6 +91,31 @@ const MapUpdater = ({ center }) => {
   return null;
 };
 
+const RouteBoundsController = ({ destination, routeCoords, userLocation }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (routeCoords && routeCoords.length > 1) {
+      try {
+        const bounds = L.latLngBounds(routeCoords);
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16, animate: true });
+      } catch (e) {
+        console.warn('fitBounds error:', e);
+      }
+    } else if (destination && userLocation) {
+      try {
+        const bounds = L.latLngBounds([
+          [userLocation.lat, userLocation.lng],
+          [destination.lat, destination.lng]
+        ]);
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16, animate: true });
+      } catch (e) {}
+    } else if (destination) {
+      map.flyTo([destination.lat, destination.lng], 15, { duration: 1.5 });
+    }
+  }, [destination, routeCoords, userLocation, map]);
+  return null;
+};
+
 const MapClickHandler = ({ onMapClick }) => {
   const map = useMap();
   useEffect(() => {
@@ -136,6 +161,7 @@ const LiveMap = ({
       <MapContainer center={activeCenter} zoom={zoom} scrollWheelZoom={interactive} dragging={interactive} zoomControl={interactive} className="w-full h-full z-0">
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap" />
         <MapUpdater center={activeCenter} />
+        <RouteBoundsController destination={destination} routeCoords={routeCoords} userLocation={userLocation || (autoLocation ? { lat: autoLocation[0], lng: autoLocation[1] } : null)} />
         {interactive && <MapClickHandler onMapClick={onMapClick} />}
 
         {/* User */}
@@ -153,12 +179,44 @@ const LiveMap = ({
         {/* Destination */}
         {destination && (
           <Marker position={[destination.lat, destination.lng]} icon={ICONS.destination}>
-            <Tooltip direction="top" offset={[0, -14]}><b>🎯 {destination.name || 'Destination'}</b></Tooltip>
+            <Tooltip direction="top" offset={[0, -14]} permanent>
+              <b style={{ color: '#0f172a', fontSize: '11px' }}>🎯 {destination.name || 'Destination'}</b>
+            </Tooltip>
+            <Popup>
+              <div style={{ padding: '4px' }}>
+                <h4 style={{ margin: '0 0 4px', fontWeight: 800, fontSize: '13px' }}>🎯 {destination.name || 'Destination'}</h4>
+                <p style={{ margin: '0 0 8px', fontSize: '11px', color: '#64748b' }}>
+                  {destination.lat.toFixed(5)}, {destination.lng.toFixed(5)}
+                </p>
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${destination.lat},${destination.lng}&travelmode=walking`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-block',
+                    background: '#2563eb',
+                    color: '#fff',
+                    padding: '4px 8px',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    textDecoration: 'none'
+                  }}
+                >
+                  Open in Google Maps ↗
+                </a>
+              </div>
+            </Popup>
           </Marker>
         )}
 
-        {/* Route */}
-        {routeCoords.length > 0 && <Polyline positions={routeCoords} color={routeColor} weight={5} opacity={0.85} />}
+        {/* Navigation Route Polyline with high-visibility glow */}
+        {routeCoords.length > 0 && (
+          <>
+            <Polyline positions={routeCoords} color={routeColor} weight={8} opacity={0.35} />
+            <Polyline positions={routeCoords} color={routeColor} weight={5} opacity={0.9} />
+          </>
+        )}
 
         {/* Safe Zone Markers — distinct icons + clickable popup */}
         {markers.map((m, i) => (

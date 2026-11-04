@@ -39,7 +39,6 @@ import PoliceChat from './pages/police/PoliceChat';
 
 // Admin Pages
 import AdminLayout from './layouts/AdminLayout';
-import AdminHome from './pages/admin/AdminHome';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminHeatmap from './pages/admin/AdminHeatmap';
@@ -153,7 +152,8 @@ function App() {
 
           {/* Admin Routes */}
           <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><AdminLayout /></ProtectedRoute>}>
-            <Route path="home" element={<AdminHome />} />
+            <Route index element={<Navigate to="/admin/analytics" replace />} />
+            <Route path="home" element={<Navigate to="/admin/analytics" replace />} />
             <Route path="analytics" element={<AdminAnalytics />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="heatmap" element={<AdminHeatmap />} />

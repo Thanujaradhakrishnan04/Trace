@@ -101,7 +101,7 @@ const AdminHeatmap = () => {
         <div>
           <div className="flex items-center gap-2">
             <MapIcon className="text-blue-600" size={22} />
-            <h1 className="text-xl font-black text-slate-900 tracking-tight">Tactical City Overwatch Heatmap</h1>
+            <h1 className="text-xl font-black text-slate-900 tracking-tight">Tactical City Safety Heatmap</h1>
           </div>
           <p className="text-xs font-semibold text-slate-500 mt-0.5">
             Geospatial threat indexing, safe havens, hospital corridors, and dynamic patrol coverage.

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { User, Shield, Activity } from 'lucide-react';
+import { User, Shield } from 'lucide-react';
 
 const RoleSelection = () => {
   const navigate = useNavigate();
@@ -55,22 +55,6 @@ const RoleSelection = () => {
           <div>
             <h3 className="font-bold text-primary-red text-lg">Tactical Command</h3>
             <p className="text-slate-500 text-sm mt-1">Officer dispatch & real-time intercepts</p>
-          </div>
-        </motion.div>
-
-        {/* Admin Role */}
-        <motion.div 
-          className="glass-panel p-6 rounded-2xl flex items-center cursor-pointer border hover:border-slate-300 transition-colors bg-white shadow-sm"
-          whileHover={{ scale: 1.02 }} 
-          whileTap={{ scale: 0.98 }}
-          onClick={() => handleRoleSelect('admin')}
-        >
-          <div className="bg-slate-800 p-4 rounded-full mr-5 text-white">
-            <Activity size={28} />
-          </div>
-          <div>
-            <h3 className="font-bold text-slate-800 text-lg">Overwatch</h3>
-            <p className="text-slate-500 text-sm mt-1">Smart city analytics & system control</p>
           </div>
         </motion.div>
 

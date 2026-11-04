@@ -1,13 +1,12 @@
 import React from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Activity, BarChart2, Users, Map, Settings } from 'lucide-react';
+import { BarChart2, Users, Map, Settings } from 'lucide-react';
 
 const AdminLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
   const navItems = [
-    { path: '/admin/home', icon: <Activity size={20} />, label: 'Overwatch' },
     { path: '/admin/analytics', icon: <BarChart2 size={20} />, label: 'Analytics' },
     { path: '/admin/users', icon: <Users size={20} />, label: 'Personnel' },
     { path: '/admin/heatmap', icon: <Map size={20} />, label: 'City Map' },

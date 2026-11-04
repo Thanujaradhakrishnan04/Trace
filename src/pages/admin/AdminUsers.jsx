@@ -180,7 +180,7 @@ const AdminUsers = () => {
         <div>
           <div className="flex items-center gap-2">
             <Users className="text-blue-600" size={24} />
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Personnel & Citizen Overwatch</h1>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Personnel & Citizen Directory</h1>
           </div>
           <p className="text-sm font-semibold text-slate-500 mt-1">
             Manage law enforcement units, verified citizens, emergency responders, and guardians.

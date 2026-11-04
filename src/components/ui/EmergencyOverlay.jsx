@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShieldAlert, MapPin, Radio, ShieldCheck, X, AlertTriangle, Users, Mail, Share2, Phone } from 'lucide-react';
+import { ShieldAlert, MapPin, Radio, ShieldCheck, X, AlertTriangle, Users, Mail, Share2, Phone, Camera, Mic, CheckCircle2, Lock } from 'lucide-react';
 import { useStore } from '../../context/useStore';
 import FloatingChatWidget from '../chat/FloatingChatWidget';
 
@@ -201,6 +201,74 @@ const EmergencyOverlay = () => {
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* Live Automated Evidence Capture (Camera & Voice Vault Active) */}
+            <div className="bg-black/60 backdrop-blur-md border border-red-500/40 rounded-3xl p-5 w-full max-w-lg shadow-2xl mb-6 text-left">
+              <div className="flex items-center justify-between mb-3 border-b border-red-500/20 pb-2">
+                <span className="text-xs font-black uppercase tracking-wider text-red-200 flex items-center gap-2">
+                  <ShieldAlert size={16} className="text-red-400" /> Evidence Vault Securing (Camera + Voice)
+                </span>
+                <span className="text-[11px] font-bold text-red-400 bg-red-950/80 px-2.5 py-0.5 rounded-full border border-red-500/40 animate-pulse flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-red-500 animate-ping inline-block"></span>
+                  REC Active
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                {/* Camera Feed / Snapshot */}
+                <div className="bg-slate-900/90 border border-slate-700/60 rounded-2xl p-3 flex flex-col items-center justify-center text-center overflow-hidden">
+                  {emergencyData?.capturedPhoto ? (
+                    <div className="relative w-full h-24 rounded-xl overflow-hidden border border-red-500/40 shadow-inner group">
+                      <img src={emergencyData.capturedPhoto} alt="Captured Evidence" className="w-full h-full object-cover" />
+                      <div className="absolute bottom-1 right-1 bg-black/80 px-1.5 py-0.5 rounded text-[9px] font-black text-emerald-400 flex items-center gap-1">
+                        <CheckCircle2 size={10} /> Saved
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-full h-24 rounded-xl bg-slate-800/80 border border-slate-700 flex flex-col items-center justify-center text-slate-400">
+                      <Camera size={26} className="text-red-400 animate-pulse mb-1" />
+                      <span className="text-[10px] font-bold text-slate-300">Activating Camera...</span>
+                    </div>
+                  )}
+                  <p className="text-[11px] font-bold text-slate-200 mt-2 flex items-center gap-1">
+                    <Camera size={12} className="text-blue-400" /> Camera Snapshot
+                  </p>
+                </div>
+
+                {/* Voice Recording / Equalizer */}
+                <div className="bg-slate-900/90 border border-slate-700/60 rounded-2xl p-3 flex flex-col items-center justify-center text-center">
+                  <div className="w-full h-24 rounded-xl bg-slate-800/80 border border-slate-700 flex flex-col items-center justify-center relative overflow-hidden px-2">
+                    {/* Animated Sound Wave bars */}
+                    <div className="flex items-center justify-center gap-1 h-10 w-full">
+                      {[40, 75, 90, 60, 85, 100, 70, 50, 80, 95].map((h, i) => (
+                        <motion.div
+                          key={i}
+                          className="w-1.5 bg-red-500 rounded-full"
+                          animate={{ height: [`${h * 0.2}%`, `${h}%`, `${h * 0.3}%`] }}
+                          transition={{ duration: 0.6 + (i % 3) * 0.2, repeat: Infinity, ease: 'easeInOut' }}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-[10px] font-black tracking-widest text-red-400 mt-1 uppercase flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping"></span>
+                      Recording Voice...
+                    </span>
+                  </div>
+                  <p className="text-[11px] font-bold text-slate-200 mt-2 flex items-center gap-1">
+                    <Mic size={12} className="text-red-400" /> Voice Encrypting
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-3 bg-red-950/40 border border-red-500/20 rounded-xl p-2.5 flex items-center justify-between text-xs">
+                <span className="text-slate-300 text-[11px] font-medium flex items-center gap-1.5">
+                  <Lock size={12} className="text-emerald-400" /> Automatically encrypting & saving evidence to Vault
+                </span>
+                <span className="text-emerald-400 font-bold text-[10px] uppercase tracking-wider bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-500/30">
+                  AES-256
+                </span>
+              </div>
             </div>
 
             {/* Live Tracking Panel */}

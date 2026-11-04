@@ -29,6 +29,7 @@ import SystemHealth from './pages/citizen/SystemHealth';
 import CitizenChat from './pages/citizen/CitizenChat';
 import Diagnostics from './pages/citizen/Diagnostics';
 import EmergencyOverlay from './components/ui/EmergencyOverlay';
+import AISnapshotModule from './components/emergency/AISnapshotModule';
 
 // Police Pages
 import PoliceLayout from './layouts/PoliceLayout';
@@ -102,6 +103,7 @@ function App() {
     <SimulationProvider>
       <Router basename={import.meta.env.BASE_URL}>
         <EmergencyOverlay />
+        <AISnapshotModule />
         
         {/* Offline Mesh Network Banner */}
         <AnimatePresence>

@@ -1,11 +1,19 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ShieldAlert, Phone, PhoneCall, MapPin, Share2, AlertCircle } from 'lucide-react';
+import { ShieldAlert, Phone, PhoneCall, MapPin, Share2, AlertCircle, Mail, Users } from 'lucide-react';
 import { useStore } from '../../context/useStore';
 import { useNavigate } from 'react-router-dom';
 
 const EmergencySOS = () => {
-  const { triggerEmergency, sendEmergencyAlert, isEmergencyMode, cancelEmergency, contacts } = useStore();
+  const { 
+    triggerEmergency, 
+    sendEmergencyAlert, 
+    isEmergencyMode, 
+    cancelEmergency, 
+    contacts,
+    sendDirectGuardianEmail,
+    sendDirectGuardianWhatsApp
+  } = useStore();
   const [pressed, setPressed] = useState(false);
   const navigate = useNavigate();
 
@@ -25,7 +33,7 @@ const EmergencySOS = () => {
         const url = `https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`;
         navigator.share?.({ title: 'My Location', url }) ?? window.open(url, '_blank');
         
-        // Instantly fire the SendGrid email dispatch bypassing any countdown
+        // Instantly fire the emergency dispatch bypassing any countdown
         sendEmergencyAlert('Manual SOS — Shared Location', { lat: pos.coords.latitude, lng: pos.coords.longitude });
       }, () => {
         // Fallback if GPS fails
@@ -45,7 +53,7 @@ const EmergencySOS = () => {
           <span className="text-red-200 text-xs font-black uppercase tracking-widest">Emergency Protocol</span>
         </div>
         <h1 className="text-4xl font-black text-white tracking-tight">SOS CENTER</h1>
-        <p className="text-red-200 text-sm mt-2">Immediate help at your fingertips</p>
+        <p className="text-red-200 text-sm mt-2">Immediate distress alert to guardians & emergency response</p>
       </div>
 
       <div className="px-5 -mt-6 space-y-4">
@@ -70,13 +78,13 @@ const EmergencySOS = () => {
             {isEmergencyMode ? '🔴 Emergency mode active — contacts alerted' : 'This will alert all your emergency contacts immediately'}
           </p>
           {isEmergencyMode && (
-            <div className="flex flex-col items-center gap-3 mt-4">
+            <div className="flex flex-col items-center gap-3 mt-4 w-full">
               <button onClick={() => navigate('/citizen/chat')}
                 className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30 animate-pulse">
                 💬 Open Police Chat
               </button>
               <button onClick={cancelEmergency}
-                className="px-6 py-2 bg-emerald-500 text-white font-bold rounded-xl text-sm">
+                className="w-full px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-sm">
                 Cancel Emergency
               </button>
             </div>
@@ -113,8 +121,8 @@ const EmergencySOS = () => {
               <PhoneCall size={22} className="text-purple-400" />
             </div>
             <div className="text-center">
-              <p className="text-white font-bold text-sm">Call Contact</p>
-              <p className="text-slate-500 text-xs">{contacts.length} contacts saved</p>
+              <p className="text-white font-bold text-sm">Guardians</p>
+              <p className="text-slate-500 text-xs">{contacts.length} saved</p>
             </div>
           </motion.button>
 
@@ -122,9 +130,11 @@ const EmergencySOS = () => {
             onClick={() => {
               if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition((pos) => {
-                  const msg = `🚨 EMERGENCY — I need help! My location: https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`;
+                  const msg = `🚨 EMERGENCY — I need help! My live location: https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`;
                   window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
                 });
+              } else {
+                window.open(`https://wa.me/?text=${encodeURIComponent('🚨 EMERGENCY — I need help immediately!')}`, '_blank');
               }
             }}
             className="bg-slate-800 rounded-2xl p-5 flex flex-col items-center gap-3 border border-slate-700">
@@ -133,28 +143,59 @@ const EmergencySOS = () => {
             </div>
             <div className="text-center">
               <p className="text-white font-bold text-sm">WhatsApp SOS</p>
-              <p className="text-slate-500 text-xs">Send location</p>
+              <p className="text-slate-500 text-xs">Broadcast GPS</p>
             </div>
           </motion.button>
         </div>
 
-        {/* Emergency contacts list */}
+        {/* Emergency contacts list with direct 1-click dispatch */}
         {contacts.length > 0 && (
           <div className="bg-slate-800 rounded-3xl p-5 border border-slate-700">
-            <h3 className="text-white font-black text-sm uppercase tracking-widest mb-4">Emergency Contacts</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-white font-black text-sm uppercase tracking-widest flex items-center gap-2">
+                <Users size={16} className="text-blue-400" /> Emergency Guardians ({contacts.length})
+              </h3>
+              <button onClick={() => navigate('/citizen/contacts')} className="text-xs text-blue-400 font-bold hover:underline">
+                Manage
+              </button>
+            </div>
+
             <div className="space-y-3">
               {contacts.map((c) => (
-                <div key={c.id} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-slate-700 rounded-full flex items-center justify-center text-white font-black">
-                      {c.name.charAt(0)}
+                <div key={c.id} className="bg-slate-900/80 border border-slate-700/60 rounded-2xl p-3 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 bg-slate-700 rounded-full flex items-center justify-center text-white font-black flex-shrink-0">
+                      {c.name.charAt(0).toUpperCase()}
                     </div>
-                    <div>
-                      <p className="text-white font-bold text-sm">{c.name}</p>
-                      <p className="text-slate-500 text-xs">{c.relation}</p>
+                    <div className="min-w-0">
+                      <p className="text-white font-bold text-sm truncate">{c.name}</p>
+                      <p className="text-slate-400 text-xs truncate">
+                        {c.email || c.phone || c.relation || 'Emergency Contact'}
+                      </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    {c.email && (
+                      <button
+                        onClick={() => sendDirectGuardianEmail(c)}
+                        className="px-2.5 py-1.5 bg-purple-600/30 hover:bg-purple-600/50 border border-purple-500/50 text-purple-300 font-bold text-xs rounded-xl flex items-center gap-1 transition-colors"
+                        title="Directly send emergency distress email with GPS to Guardian"
+                      >
+                        <Mail size={13} /> Email
+                      </button>
+                    )}
+
+                    {c.phone && (
+                      <button
+                        onClick={() => sendDirectGuardianWhatsApp(c)}
+                        className="px-2.5 py-1.5 bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/50 text-emerald-300 font-bold text-xs rounded-xl flex items-center gap-1 transition-colors"
+                        title="Send WhatsApp SOS with GPS"
+                      >
+                        <Share2 size={13} /> WhatsApp
+                      </button>
+                    )}
+
                     <button onClick={() => {
                         if (navigator.geolocation) {
                           navigator.geolocation.getCurrentPosition((pos) => {
@@ -162,13 +203,18 @@ const EmergencySOS = () => {
                           });
                         }
                       }}
-                      className="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center" title="Send GPS">
-                      <MapPin size={16} className="text-blue-400" />
+                      className="w-8 h-8 bg-blue-500/20 hover:bg-blue-500/40 rounded-xl flex items-center justify-center transition-colors" 
+                      title="Send GPS Beacon">
+                      <MapPin size={15} className="text-blue-400" />
                     </button>
-                    <a href={`tel:${c.phone}`}
-                      className="w-10 h-10 bg-emerald-500/20 rounded-full flex items-center justify-center">
-                      <Phone size={16} className="text-emerald-400" />
-                    </a>
+
+                    {c.phone && (
+                      <a href={`tel:${c.phone}`}
+                        className="w-8 h-8 bg-emerald-500/20 hover:bg-emerald-500/40 rounded-xl flex items-center justify-center transition-colors"
+                        title="Call Guardian">
+                        <Phone size={15} className="text-emerald-400" />
+                      </a>
+                    )}
                   </div>
                 </div>
               ))}
@@ -179,9 +225,12 @@ const EmergencySOS = () => {
         {contacts.length === 0 && (
           <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex items-center gap-3">
             <AlertCircle size={20} className="text-amber-400 flex-shrink-0" />
-            <p className="text-amber-300 text-sm font-semibold">
-              No emergency contacts saved. <button onClick={() => navigate('/citizen/contacts')} className="underline">Add contacts</button> to enable alerts.
-            </p>
+            <div className="text-left">
+              <p className="text-amber-300 text-sm font-semibold">No emergency contacts saved.</p>
+              <button onClick={() => navigate('/citizen/contacts')} className="text-xs text-amber-400 font-bold underline mt-0.5 block">
+                Add emergency contacts now to enable email distress alerts
+              </button>
+            </div>
           </div>
         )}
       </div>

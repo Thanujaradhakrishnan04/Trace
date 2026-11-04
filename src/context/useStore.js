@@ -94,7 +94,14 @@ export const useStore = create((set, get) => {
 
   return {
     currentUser: null,
-    contacts: [],
+    contacts: typeof window !== 'undefined' ? (() => {
+      try {
+        const cached = localStorage.getItem('sentinel_contacts');
+        return cached ? JSON.parse(cached) : [];
+      } catch (e) {
+        return [];
+      }
+    })() : [],
     alertHistory: [],
     activeEmergencyId: null,
     emergencyChats: {},
@@ -236,7 +243,10 @@ export const useStore = create((set, get) => {
       unsubContacts = onSnapshot(collection(db, 'users', uid, 'contacts'), (snapshot) => {
         const contactsList = [];
         snapshot.forEach((doc) => contactsList.push({ id: doc.id, ...doc.data() }));
-        set({ contacts: contactsList });
+        if (contactsList.length > 0) {
+          try { localStorage.setItem('sentinel_contacts', JSON.stringify(contactsList)); } catch (e) {}
+          set({ contacts: contactsList });
+        }
       }, (err) => {
         console.warn("Failed to listen to contacts (permissions denied):", err.message);
       });
@@ -311,47 +321,92 @@ export const useStore = create((set, get) => {
 
     addContact: async (contact) => {
       const uid = get().currentUser?.uid;
-      if (!uid) return;
+      let newContact = { id: 'contact_' + Date.now(), ...contact };
       try {
         if (get().currentUser?.isMockUser) {
           throw new Error("Mock user mode active");
         }
-        await addDoc(collection(db, 'users', uid, 'contacts'), contact);
+        if (uid) {
+          const docRef = await addDoc(collection(db, 'users', uid, 'contacts'), contact);
+          newContact.id = docRef.id;
+        }
       } catch (err) {
         console.warn("Firestore addContact failed, using local fallback:", err.message);
-        const newContact = { id: 'local_' + Date.now(), ...contact };
-        set({ contacts: [...get().contacts, newContact] });
       }
+      const updated = [...get().contacts.filter(c => c.id !== newContact.id), newContact];
+      try { localStorage.setItem('sentinel_contacts', JSON.stringify(updated)); } catch (e) {}
+      set({ contacts: updated });
     },
 
     deleteContact: async (id) => {
       const uid = get().currentUser?.uid;
-      if (!uid) return;
       try {
-        if (get().currentUser?.isMockUser) {
-          throw new Error("Mock user mode active");
+        if (!get().currentUser?.isMockUser && uid) {
+          await deleteDoc(doc(db, 'users', uid, 'contacts', id));
         }
-        await deleteDoc(doc(db, 'users', uid, 'contacts', id));
       } catch (err) {
         console.warn("Firestore deleteContact failed, using local fallback:", err.message);
-        set({ contacts: get().contacts.filter(c => c.id !== id) });
       }
+      const updated = get().contacts.filter(c => c.id !== id);
+      try { localStorage.setItem('sentinel_contacts', JSON.stringify(updated)); } catch (e) {}
+      set({ contacts: updated });
     },
 
     updateContact: async (id, updatedFields) => {
       const uid = get().currentUser?.uid;
-      if (!uid) return;
       try {
-        if (get().currentUser?.isMockUser) {
-          throw new Error("Mock user mode active");
+        if (!get().currentUser?.isMockUser && uid) {
+          await updateDoc(doc(db, 'users', uid, 'contacts', id), updatedFields);
         }
-        await updateDoc(doc(db, 'users', uid, 'contacts', id), updatedFields);
       } catch (err) {
         console.warn("Firestore updateContact failed, using local fallback:", err.message);
-        set({
-          contacts: get().contacts.map(c => c.id === id ? { ...c, ...updatedFields } : c)
-        });
       }
+      const updated = get().contacts.map(c => c.id === id ? { ...c, ...updatedFields } : c);
+      try { localStorage.setItem('sentinel_contacts', JSON.stringify(updated)); } catch (e) {}
+      set({ contacts: updated });
+    },
+
+    sendDirectGuardianEmail: (contact, customReason = null) => {
+      const location = get().currentLocation;
+      const userName = get().currentUser?.name || 'Citizen';
+      const userPhone = get().currentUser?.phone || '';
+      const email = contact?.email || '';
+      if (!email) {
+        console.warn('No email provided for guardian dispatch');
+        return false;
+      }
+      const locStr = location?.lat ? `https://maps.google.com/?q=${location.lat},${location.lng}` : 'Location unavailable';
+      const reason = customReason || get().emergencyData?.reason || 'EMERGENCY SOS DISTRESS TRIGGERED';
+      const subject = encodeURIComponent(`🚨 EMERGENCY SOS ALERT: ${userName} may be in danger!`);
+      const body = encodeURIComponent(
+        `🚨 STREETSENTINEL EMERGENCY DISTRESS ALERT 🚨\n\n` +
+        `User: ${userName}\n` +
+        `Phone: ${userPhone}\n` +
+        `Distress Reason: ${reason}\n\n` +
+        `LIVE GPS LOCATION:\n${locStr}\n\n` +
+        `Timestamp: ${new Date().toLocaleString()}\n\n` +
+        `Possible distress detected. Please contact immediately or dispatch emergency assistance!`
+      );
+      window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+      return true;
+    },
+
+    sendDirectGuardianWhatsApp: (contact, customReason = null) => {
+      const location = get().currentLocation;
+      const userName = get().currentUser?.name || 'Citizen';
+      const phone = (contact?.phone || '').replace(/[^0-9]/g, '');
+      const locStr = location?.lat ? `https://maps.google.com/?q=${location.lat},${location.lng}` : 'Location unavailable';
+      const reason = customReason || get().emergencyData?.reason || 'EMERGENCY SOS TRIGGERED';
+      const text = encodeURIComponent(
+        `🚨 *STREETSENTINEL EMERGENCY ALERT* 🚨\n\n` +
+        `*${userName}* needs immediate help!\n` +
+        `*Reason:* ${reason}\n` +
+        `*Live GPS:* ${locStr}\n` +
+        `*Timestamp:* ${new Date().toLocaleTimeString()}\n\nPlease respond or send assistance immediately!`
+      );
+      const url = phone ? `https://wa.me/${phone}?text=${text}` : `https://api.whatsapp.com/send?text=${text}`;
+      window.open(url, '_blank');
+      return true;
     },
 
     updateUserProfile: async (updatedFields) => {

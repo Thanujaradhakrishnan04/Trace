@@ -17,8 +17,8 @@ permissions:
   id-token: write
 
 jobs:
-  run-all-tests-and-deploy:
-    name: Run E2E Tests & Generate Report
+  ece-test-report:
+    name: 🧪 ECE Tests
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Repository
@@ -63,7 +63,7 @@ jobs:
           ENVEOF
         working-directory: ./server
 
-      - name: 🏗️ Build Frontend for CI Testing
+      - name: 🏗️ Build Frontend for CI
         run: |
           sed -i "s/import basicSsl from '@vitejs\/plugin-basic-ssl';//g" vite.config.js
           sed -i "s/basicSsl(),//g" vite.config.js
@@ -93,19 +93,116 @@ jobs:
           timeout 30 bash -c 'until curl -sf http://localhost:4000/emergency/health > /dev/null 2>&1 || curl -sf http://localhost:4000 > /dev/null 2>&1; do sleep 2; done'
           echo "✅ Backend is up"
 
-      - name: 🧪 Run Selenium ECE Tests
+      - name: 🧪 Run ECE Selenium Tests
         run: node e2e_run.cjs
         env:
           BASE_URL: http://localhost:5173
           CI: 'true'
 
-      - name: 📱 Run Appium Mobile Report Generator
+      - name: 📊 Upload ECE Test Report (Excel)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ECE-Report-${{ github.run_number }}
+          path: |
+            E2E_Functional_Test_Report.xlsx
+            Vulnerability Test Results/E2E_Functional_Test_Report_Latest.xlsx
+          retention-days: 30
+
+  appium-test-report:
+    name: 📱 Appium Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: 📦 Install Frontend Dependencies
+        run: npm ci
+
+      - name: 📱 Run Appium CSV to XLSX Converter
         run: node convert_appium.cjs
 
-      - name: 🔒 Run Security Audit Report Generator
+      - name: 📊 Upload Appium E2E Report (Excel & CSV)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Appium-Mobile-E2E-Report-${{ github.run_number }}
+          path: |
+            Vulnerability Test Results/Appium_E2E_Test_Report_Final.xlsx
+            Vulnerability Test Results/Appium_E2E_Test_Report_Final.csv
+          retention-days: 30
+
+  security-audit-report:
+    name: 🔒 Security Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: 📦 Install Frontend Dependencies
+        run: npm ci
+
+      - name: 🔒 Run Security Audit & Penetration Report Generator
         run: |
           node "Vulnerability Test Results/security_test.cjs"
           cp "Vulnerability Test Results/security_test.xlsx" "Vulnerability Test Results/security test.xlsx"
+
+      - name: 📊 Upload Security Audit Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Security-Audit-Report-${{ github.run_number }}
+          path: |
+            Vulnerability Test Results/security_test.xlsx
+            Vulnerability Test Results/security test.xlsx
+            Vulnerability Test Results/Security_Audit_Report.xlsx
+          retention-days: 30
+
+  load-test-report:
+    name: ⚡ Load Tests (100 VUs)
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: 📦 Install Frontend Dependencies
+        run: npm ci
+
+      - name: 📦 Install Backend Dependencies
+        run: npm ci
+        working-directory: ./server
+
+      - name: 🚀 Start Backend Server for Load Test
+        run: |
+          cd server
+          node server.js &
+          echo "BACKEND_PID=$!" >> $GITHUB_ENV
+        env:
+          PORT: 4000
+
+      - name: ⏳ Wait for Backend to Be Ready
+        run: |
+          echo "Waiting for backend on port 4000..."
+          timeout 30 bash -c 'until curl -sf http://localhost:4000/emergency/health > /dev/null 2>&1 || curl -sf http://localhost:4000 > /dev/null 2>&1; do sleep 2; done'
+          echo "✅ Backend is ready for load testing"
 
       - name: ⚡ Run 1-Minute Load Test (100 Concurrent Virtual Users)
         run: node load_test.cjs
@@ -113,6 +210,33 @@ jobs:
           TARGET_URL: http://localhost:4000
           VUS: 100
           DURATION: 60
+
+      - name: 📊 Upload Load Test Report (Excel)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Load-Testing-Report-${{ github.run_number }}
+          path: |
+            Load_Testing_Report.xlsx
+            Vulnerability Test Results/Load_Testing_Report.xlsx
+          retention-days: 30
+
+  download-all-reports:
+    name: 📥 Download All Reports & Deployment
+    runs-on: ubuntu-latest
+    needs: [ece-test-report, appium-test-report, security-audit-report, load-test-report]
+    if: always()
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 📥 Download Artifacts from Test Jobs
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '*-${{ github.run_number }}'
+          path: All_Test_Reports
+          merge-multiple: true
+        continue-on-error: true
 
       - name: 📁 Bundle All Test Reports
         run: |
@@ -155,57 +279,15 @@ jobs:
             echo "No changes in reports — skipping commit."
           else
             git commit -m "ci: auto-update all 4 test reports [run #${{ github.run_number }}] [skip ci]"
-            git reset --hard HEAD
             for i in {1..5}; do
               git pull --rebase -X theirs origin ${{ github.ref_name }} && git push origin HEAD:${{ github.ref_name }} && exit 0 || { git rebase --abort || true; sleep 5; }
             done
             exit 1
           fi
 
-      - name: 🔐 Create Production .env for Live Deployment
-        run: |
-          API_KEY="${{ secrets.VITE_FIREBASE_API_KEY }}"
-          AUTH_DOMAIN="${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}"
-          PROJECT_ID="${{ secrets.VITE_FIREBASE_PROJECT_ID }}"
-          STORAGE_BUCKET="${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}"
-          MESSAGING_ID="${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}"
-          APP_ID="${{ secrets.VITE_FIREBASE_APP_ID }}"
-          MEASUREMENT_ID="${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}"
-
-          cat > .env << ENVEOF
-          VITE_FIREBASE_API_KEY=${API_KEY:-AIzaSyCLOlDRIYzXyhkjQ4AfmyApHlTFBVGQ5SM}
-          VITE_FIREBASE_AUTH_DOMAIN=${AUTH_DOMAIN:-sos-street.firebaseapp.com}
-          VITE_FIREBASE_PROJECT_ID=${PROJECT_ID:-sos-street}
-          VITE_FIREBASE_STORAGE_BUCKET=${STORAGE_BUCKET:-sos-street.firebasestorage.app}
-          VITE_FIREBASE_MESSAGING_SENDER_ID=${MESSAGING_ID:-166698346533}
-          VITE_FIREBASE_APP_ID=${APP_ID:-1:166698346533:web:06cc4059099bcae7c1f7cc}
-          VITE_FIREBASE_MEASUREMENT_ID=${MEASUREMENT_ID:-G-N2Q5VKTT9Z}
-          VITE_BACKEND_URL=https://street-patrol-y9p7.onrender.com
-          ENVEOF
-
-      - name: 🏗️ Build Website for GitHub Pages
-        run: |
-          npm run build
-          # Enable SPA deep-link routing on GitHub Pages (serves index.html on 404)
-          cp dist/index.html dist/404.html
-        env:
-          NODE_ENV: production
-          VITE_BASE_PATH: /Trace/
-
-      - name: 🚀 Deploy to gh-pages Branch
-        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
-          publish_branch: gh-pages
-          force_orphan: false
-
-      - name: 📋 Write StreetSentinel Results & Master Download Summary
-        if: always()
+      - name: 📋 Publish Download Center to Job Summary
         run: |
           cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-
           ### 🌐 Live Production Website Deployment
           | Deployment Property | Value / Status |
           |:---|:---|
@@ -241,5 +323,75 @@ jobs:
           | **Branch** | \`${{ github.ref_name }}\` |
           | **Triggered by** | ${{ github.actor }} |
           | **Website Deployment** | [https://thanujaradhakrishnan04.github.io/Trace/](https://thanujaradhakrishnan04.github.io/Trace/) |
+          EOF
 
+  deploy-website:
+    name: 🌐 Deploy Website to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: [download-all-reports]
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: 📦 Install Frontend Dependencies
+        run: npm ci
+
+      - name: 🔐 Create Production .env
+        run: |
+          API_KEY="${{ secrets.VITE_FIREBASE_API_KEY }}"
+          AUTH_DOMAIN="${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}"
+          PROJECT_ID="${{ secrets.VITE_FIREBASE_PROJECT_ID }}"
+          STORAGE_BUCKET="${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}"
+          MESSAGING_ID="${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}"
+          APP_ID="${{ secrets.VITE_FIREBASE_APP_ID }}"
+          MEASUREMENT_ID="${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}"
+
+          cat > .env << ENVEOF
+          VITE_FIREBASE_API_KEY=${API_KEY:-AIzaSyCLOlDRIYzXyhkjQ4AfmyApHlTFBVGQ5SM}
+          VITE_FIREBASE_AUTH_DOMAIN=${AUTH_DOMAIN:-sos-street.firebaseapp.com}
+          VITE_FIREBASE_PROJECT_ID=${PROJECT_ID:-sos-street}
+          VITE_FIREBASE_STORAGE_BUCKET=${STORAGE_BUCKET:-sos-street.firebasestorage.app}
+          VITE_FIREBASE_MESSAGING_SENDER_ID=${MESSAGING_ID:-166698346533}
+          VITE_FIREBASE_APP_ID=${APP_ID:-1:166698346533:web:06cc4059099bcae7c1f7cc}
+          VITE_FIREBASE_MEASUREMENT_ID=${MEASUREMENT_ID:-G-N2Q5VKTT9Z}
+          VITE_BACKEND_URL=https://street-patrol-y9p7.onrender.com
+          ENVEOF
+
+      - name: 🏗️ Build Website for GitHub Pages
+        run: |
+          sed -i "s/import basicSsl from '@vitejs\/plugin-basic-ssl';//g" vite.config.js
+          sed -i "s/basicSsl(),//g" vite.config.js
+          npm run build
+          # Enable SPA deep-link routing on GitHub Pages (serves index.html on 404)
+          cp dist/index.html dist/404.html
+        env:
+          NODE_ENV: production
+          VITE_BASE_PATH: /Trace/
+
+      - name: 🚀 Deploy to gh-pages Branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          publish_branch: gh-pages
+          force_orphan: false
+
+      - name: 📋 Write Deployment Link to Job Summary
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          ### 🚀 Website Deployed Successfully!
+
+          Your application is live and accessible at:
+          ### 🔗 [https://thanujaradhakrishnan04.github.io/Trace/](https://thanujaradhakrishnan04.github.io/Trace/)
+
+          | Environment | Live URL | Platform | Status |
+          |:---|:---|:---:|:---:|
+          | **Production Website** | [https://thanujaradhakrishnan04.github.io/Trace/](https://thanujaradhakrishnan04.github.io/Trace/) | GitHub Pages | 🟢 **ACTIVE / LIVE** |
           EOF

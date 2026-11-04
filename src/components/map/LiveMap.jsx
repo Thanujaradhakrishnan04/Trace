@@ -136,6 +136,9 @@ const LiveMap = ({
   userLocation = null,
   destination = null,
   routeCoords = [],
+  alternateRouteCoords = [],
+  alternateRouteColor = '#94a3b8',
+  onSelectAlternate = null,
   interactive = true,
   onMapClick = null,
   markers = [],
@@ -210,7 +213,27 @@ const LiveMap = ({
           </Marker>
         )}
 
-        {/* Navigation Route Polyline with high-visibility glow */}
+        {/* Alternate Route Polyline (Dashed with click toggle) */}
+        {alternateRouteCoords && alternateRouteCoords.length > 0 && (
+          <Polyline
+            positions={alternateRouteCoords}
+            color={alternateRouteColor}
+            weight={5}
+            dashArray="7, 7"
+            opacity={0.75}
+            eventHandlers={{
+              click: () => onSelectAlternate && onSelectAlternate()
+            }}
+          >
+            <Tooltip direction="center" offset={[0, 0]} opacity={0.9}>
+              <span style={{ fontSize: '11px', fontWeight: 700 }}>
+                🔄 Alternate Route (Click to select)
+              </span>
+            </Tooltip>
+          </Polyline>
+        )}
+
+        {/* Selected Primary Route Polyline with high-visibility glow */}
         {routeCoords.length > 0 && (
           <>
             <Polyline positions={routeCoords} color={routeColor} weight={8} opacity={0.35} />

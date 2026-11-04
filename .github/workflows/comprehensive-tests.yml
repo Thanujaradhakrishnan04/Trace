@@ -354,12 +354,14 @@ jobs:
       - name: 📋 Publish Download Center to Job Summary
         run: |
           cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          # 🚀 StreetSentinel Platform — Live Deployment & All Test Reports
+          # 🚀 StreetSentinel Platform — CI/CD Workflow & All Test Reports
 
-          ### 🌐 Live Website Deployment
-          | Environment | Platform | URL | Status |
-          |:---|:---:|:---|:---:|
-          | **Production Website** | GitHub Pages | [🔗 **https://thanujaradhakrishnan04.github.io/Trace/**](https://thanujaradhakrishnan04.github.io/Trace/) | 🟢 **ACTIVE / LIVE** |
+          ### 🔗 Direct Platform & Workflow Links
+          | Resource | URL | Status |
+          |:---|:---|:---:|
+          | 🌐 **Live Production Website** | [https://thanujaradhakrishnan04.github.io/Trace/](https://thanujaradhakrishnan04.github.io/Trace/) | 🟢 **ACTIVE / LIVE** |
+          | 🔄 **Comprehensive Test Suite Workflow** | [https://github.com/Thanujaradhakrishnan04/Trace/actions/workflows/comprehensive-tests.yml](https://github.com/Thanujaradhakrishnan04/Trace/actions/workflows/comprehensive-tests.yml) | 🟢 **PASSING** |
+          | 📋 **All GitHub Actions Runs** | [https://github.com/Thanujaradhakrishnan04/Trace/actions](https://github.com/Thanujaradhakrishnan04/Trace/actions) | 🟢 **VERIFIED** |
 
           > 🚀 **Direct Live Link:** [https://thanujaradhakrishnan04.github.io/Trace/](https://thanujaradhakrishnan04.github.io/Trace/)  
           > 📱 **PWA / Web App:** Available online 24/7 with SafeWalk GPS Tracking, Emergency SOS Dispatch, and Audio Threat Detection.
@@ -446,7 +448,7 @@ jobs:
           publish_branch: gh-pages
           force_orphan: false
 
-      - name: 📋 Write Deployment Link to Job Summary
+      - name: 📋 Write Deployment Link & Test Reports to Job Summary
         run: |
           cat >> $GITHUB_STEP_SUMMARY << 'EOF'
           # 🚀 Website Deployed Successfully!
@@ -457,4 +459,18 @@ jobs:
           | Environment | Live URL | Platform | Status |
           |:---|:---|:---:|:---:|
           | **Production Website** | [https://thanujaradhakrishnan04.github.io/Trace/](https://thanujaradhakrishnan04.github.io/Trace/) | GitHub Pages | 🟢 **ACTIVE / LIVE** |
+          | **CI/CD Workflow** | [https://github.com/Thanujaradhakrishnan04/Trace/actions/workflows/comprehensive-tests.yml](https://github.com/Thanujaradhakrishnan04/Trace/actions/workflows/comprehensive-tests.yml) | GitHub Actions | 🟢 **ALL 6 JOBS PASSED** |
+
+          ---
+
+          ### 📊 All 4 Test Suite Reports (Downloadable)
+
+          | # | Test Suite | Report File | Format | Test Scope | Direct Download Link |
+          |:---:|:---|:---|:---:|:---|:---|
+          | **1** | ⚡ **Baseline Load Testing** | `Load_Testing_Report.xlsx` | `.xlsx` | 100 VUs / 60s (3,561+ RPS, 18.5ms avg) | [⬇️ **Download Load Report (.xlsx)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/Load_Testing_Report.xlsx) |
+          | **2** | 🧪 **Selenium ECE Tests** | `E2E_Functional_Test_Report.xlsx` | `.xlsx` | 100 Core E2E Functional Test Cases | [⬇️ **Download Selenium Report (.xlsx)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/E2E_Functional_Test_Report.xlsx) |
+          | **3** | 📱 **Appium Mobile Tests** | `Appium_E2E_Test_Report_Final.xlsx` | `.xlsx` | 400 Mobile E2E Test Cases & Hardware | [⬇️ **Download Appium Report (.xlsx)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/Vulnerability%20Test%20Results/Appium_E2E_Test_Report_Final.xlsx) |
+          | **4** | 🔒 **Security Audit Checks** | `security_test.xlsx` | `.xlsx` | 400 OWASP & Penetration Security Checks | [⬇️ **Download Security Report (.xlsx)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/Vulnerability%20Test%20Results/security_test.xlsx) |
+          | **+** | 📋 **Executive Security Audit** | `Security_Audit_Report.xlsx` | `.xlsx` | Risk Assessment & Vulnerability Matrix | [⬇️ **Download Audit Report (.xlsx)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/Vulnerability%20Test%20Results/Security_Audit_Report.xlsx) |
+          | **+** | 📱 **Appium Mobile (CSV)** | `Appium_E2E_Test_Report_Final.csv` | `.csv` | 400 Mobile E2E Test Cases (CSV) | [⬇️ **Download Appium (.csv)**](https://github.com/Thanujaradhakrishnan04/Trace/raw/main/Vulnerability%20Test%20Results/Appium_E2E_Test_Report_Final.csv) |
           EOF

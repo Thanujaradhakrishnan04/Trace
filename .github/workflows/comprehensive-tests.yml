@@ -321,6 +321,14 @@ jobs:
         run: |
           git pull origin ${{ github.ref_name }} || true
 
+      - name: 📥 Download Artifacts from Test Jobs
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '*-${{ github.run_number }}'
+          path: All_Test_Reports
+          merge-multiple: true
+        continue-on-error: true
+
       - name: 📁 Bundle All Test Reports
         run: |
           mkdir -p All_Test_Reports
@@ -382,6 +390,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [download-all-reports]
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    environment:
+      name: github-pages
+      url: https://thanujaradhakrishnan04.github.io/Trace/
     steps:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
@@ -418,32 +429,13 @@ jobs:
           NODE_ENV: production
           VITE_BASE_PATH: /Trace/
 
-      - name: ⚙️ Setup Pages
-        id: pages
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
-        continue-on-error: true
-
-      - name: 📦 Upload Pages Artifact
-        id: upload-pages
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
-        continue-on-error: true
-
-      - name: 🚀 Deploy to GitHub Pages (Actions)
-        id: deployment
-        if: steps.upload-pages.outcome == 'success'
-        uses: actions/deploy-pages@v4
-        continue-on-error: true
-
-      - name: 🚀 Deploy to gh-pages Branch (Automated Fallback)
-        if: steps.deployment.outcome != 'success'
+      - name: 🚀 Deploy to gh-pages Branch
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
+          publish_branch: gh-pages
+          force_orphan: false
 
       - name: 📋 Write Deployment Link to Job Summary
         run: |
@@ -455,5 +447,5 @@ jobs:
 
           | Environment | Live URL | Platform | Status |
           |:---|:---|:---:|:---:|
-          | **Production Website** | [https://thanujaradhakrishnan04.github.io/Trace/](https://thanujaradhakrishnan04.github.io/Trace/) | GitHub Pages | 🟢 **ACTIVE** |
+          | **Production Website** | [https://thanujaradhakrishnan04.github.io/Trace/](https://thanujaradhakrishnan04.github.io/Trace/) | GitHub Pages | 🟢 **ACTIVE / LIVE** |
           EOF

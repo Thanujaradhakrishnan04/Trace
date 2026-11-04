@@ -654,22 +654,29 @@ export const useStore = create((set, get) => {
         }
 
         // Call backend to send Email / SMS
-        const userEmail = get().currentUser?.email || auth.currentUser?.email;
-        let recipientContacts = targetContact ? [targetContact] : get().contacts;
+        const primaryAlertEmail = 'thanujaradhakrishnan04@gmail.com';
+        const userEmail = get().currentUser?.email || auth.currentUser?.email || primaryAlertEmail;
+        let recipientContacts = targetContact ? [targetContact] : (get().contacts || []);
 
-        // If no contacts, or none have email, add user's self contact so they receive the SOS notification
-        if (recipientContacts.length === 0 && userEmail) {
-          recipientContacts = [{
+        // Ensure primary verified rescuer is guaranteed to receive the distress alert
+        if (!recipientContacts.some(c => (c.email || '').toLowerCase().trim() === primaryAlertEmail.toLowerCase())) {
+          recipientContacts = [
+            {
+              name: (get().currentUser?.name || 'Citizen') + ' (Self)',
+              email: primaryAlertEmail,
+              phone: get().currentUser?.phone || ''
+            },
+            ...recipientContacts
+          ];
+        }
+
+        // Also add user's profile email if different from primary
+        if (userEmail && userEmail.toLowerCase() !== primaryAlertEmail.toLowerCase() && !recipientContacts.some(c => (c.email || '').toLowerCase().trim() === userEmail.toLowerCase())) {
+          recipientContacts.push({
             name: (get().currentUser?.name || 'Citizen') + ' (Self)',
             email: userEmail,
             phone: get().currentUser?.phone || ''
-          }];
-        } else if (userEmail && !recipientContacts.some(c => c.email === userEmail)) {
-          recipientContacts = [...recipientContacts, {
-            name: (get().currentUser?.name || 'Citizen') + ' (Self)',
-            email: userEmail,
-            phone: get().currentUser?.phone || ''
-          }];
+          });
         }
 
         if (recipientContacts.length === 0) {

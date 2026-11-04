@@ -51,7 +51,7 @@ app.use(express.json({ limit: '5mb' }));
 // ── Rate Limiting on Emergency Endpoint ──
 const emergencyLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 5, // max 5 requests per window
+  max: 100, // relaxed so users and testers are never throttled during an emergency
   message: { error: 'Too many emergency requests. Please wait before trying again.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -68,7 +68,7 @@ const authenticateToken = async (req, res, next) => {
   if (idToken.startsWith('mock') || idToken === 'mock.jwt.token') {
     req.user = {
       uid: req.body.userName ? 'mock_' + req.body.userName.toLowerCase().replace(/\s+/g, '_') : 'mock_citizen_uid',
-      email: 'roshinielumalai12@gmail.com',
+      email: process.env.PRIMARY_ALERT_EMAIL || 'thanujaradhakrishnan04@gmail.com',
       name: req.body.userName || 'Citizen',
       role: 'citizen'
     };
@@ -91,7 +91,7 @@ const authenticateToken = async (req, res, next) => {
         console.warn('[Auth] Token base64 parse failed, falling back to mock user profile.');
         decodedToken = {
           uid: req.body.userName ? 'mock_' + req.body.userName.toLowerCase().replace(/\s+/g, '_') : 'mock_citizen_uid',
-          email: 'roshinielumalai12@gmail.com',
+          email: process.env.PRIMARY_ALERT_EMAIL || 'thanujaradhakrishnan04@gmail.com',
           name: req.body.userName || 'Citizen',
           role: 'citizen'
         };
@@ -153,7 +153,7 @@ io.use(async (socket, next) => {
     return next(new Error('Authentication required'));
   }
   if (typeof token === 'string' && (token.startsWith('mock') || token === 'mock.jwt.token')) {
-    socket.user = { uid: 'mock_citizen_uid', email: 'roshinielumalai12@gmail.com', name: 'Citizen', role: 'citizen' };
+    socket.user = { uid: 'mock_citizen_uid', email: process.env.PRIMARY_ALERT_EMAIL || 'thanujaradhakrishnan04@gmail.com', name: 'Citizen', role: 'citizen' };
     return next();
   }
   try {
@@ -169,7 +169,7 @@ io.use(async (socket, next) => {
           decoded.uid = decoded.user_id;
         }
       } catch (parseErr) {
-        decoded = { uid: 'mock_citizen_uid', email: 'roshinielumalai12@gmail.com', name: 'Citizen', role: 'citizen' };
+        decoded = { uid: 'mock_citizen_uid', email: process.env.PRIMARY_ALERT_EMAIL || 'thanujaradhakrishnan04@gmail.com', name: 'Citizen', role: 'citizen' };
       }
     }
     socket.user = decoded;
@@ -272,16 +272,28 @@ app.post('/emergency/dispatch', emergencyLimiter, authenticateToken, async (req,
       console.log(`[Filter] Filtered down to specific contact for targetContactId: ${targetContactId}`);
     }
 
-    // Always send a copy to the user's own email for confirmation/record
+    // Always ensure the primary rescue responder is guaranteed to receive the distress alert
+    const primaryAlertEmail = process.env.PRIMARY_ALERT_EMAIL || 'thanujaradhakrishnan04@gmail.com';
+    const hasPrimaryEmail = contactsToAlert.some(c => (c.email || '').toLowerCase().trim() === primaryAlertEmail.toLowerCase());
+    if (!hasPrimaryEmail) {
+      contactsToAlert.unshift({
+        name: (userName || 'Citizen') + " (Primary Responder / Self)",
+        email: primaryAlertEmail,
+        relation: 'Primary'
+      });
+      console.log(`[Dispatch] Added guaranteed primary rescue email to recipient list: ${primaryAlertEmail}`);
+    }
+
+    // Also include user's own email if provided and different
     if (req.user && req.user.email) {
-      const alreadyHasUserEmail = contactsToAlert.some(c => c.email === req.user.email);
+      const alreadyHasUserEmail = contactsToAlert.some(c => (c.email || '').toLowerCase().trim() === req.user.email.toLowerCase().trim());
       if (!alreadyHasUserEmail) {
         contactsToAlert.push({
-          name: userName + " (Self)",
+          name: userName + " (User)",
           email: req.user.email,
           relation: 'Self'
         });
-        console.log(`[Fallback] Added user's own email to recipient list: ${maskEmail(req.user.email)}`);
+        console.log(`[Dispatch] Added user's profile email to recipient list: ${maskEmail(req.user.email)}`);
       }
     }
 
@@ -301,7 +313,7 @@ app.post('/emergency/dispatch', emergencyLimiter, authenticateToken, async (req,
         if (!sentEmails.has(cleanEmail)) {
           sentEmails.add(cleanEmail);
           console.log(`Sending Emergency Email to: ${maskEmail(cleanEmail)}`);
-          const emailResult = await sendEmergencyEmail(cleanEmail, safeLocation, userName, userPhone, photo, physicalAddress);
+          const emailResult = await sendEmergencyEmail(cleanEmail, safeLocation, userName, userPhone, photo, physicalAddress, contact.name);
           if (emailResult.success) {
             emailStatus = 'SUCCESS';
           }

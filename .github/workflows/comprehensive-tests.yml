@@ -433,20 +433,9 @@ jobs:
         run: |
           sed -i "s/import basicSsl from '@vitejs\/plugin-basic-ssl';//g" vite.config.js
           sed -i "s/basicSsl(),//g" vite.config.js
-          mkdir -p public/reports
-          cp -f Load_Testing_Report.xlsx public/reports/ 2>/dev/null || true
-          cp -f "Vulnerability Test Results/Load_Testing_Report.xlsx" public/reports/ 2>/dev/null || true
-          cp -f E2E_Functional_Test_Report.xlsx public/reports/ 2>/dev/null || true
-          cp -f "Vulnerability Test Results/E2E_Functional_Test_Report_Latest.xlsx" public/reports/ 2>/dev/null || true
-          cp -f "Vulnerability Test Results/Appium_E2E_Test_Report_Final.xlsx" public/reports/ 2>/dev/null || true
-          cp -f "Vulnerability Test Results/Appium_E2E_Test_Report_Final.csv" public/reports/ 2>/dev/null || true
-          cp -f "Vulnerability Test Results/security_test.xlsx" public/reports/ 2>/dev/null || true
-          cp -f "Vulnerability Test Results/Security_Audit_Report.xlsx" public/reports/ 2>/dev/null || true
           npm run build
           # Enable SPA deep-link routing on GitHub Pages (serves index.html on 404)
           cp dist/index.html dist/404.html
-          mkdir -p dist/reports
-          cp -rf public/reports/* dist/reports/ 2>/dev/null || true
         env:
           NODE_ENV: production
           VITE_BASE_PATH: /Trace/

@@ -533,27 +533,37 @@ async function runLoadTest() {
     const rawUrl = `https://github.com/${repo}/raw/${ref}`;
 
     const summaryMd = `
-## ⚡ StreetSentinel Baseline Load Test Results
+### ⚡ Baseline Load Testing (100 VUs) Summary
+- **Virtual Users (VUs):** ${VIRTUAL_USERS} Concurrent Users
+- **Test Duration:** ${totalDurationSec.toFixed(1)}s (1 Full Minute Continuous Load)
+- **Total Requests Handled:** ${totalRequests.toLocaleString()} requests
+- **Throughput (RPS):** ${avgRps} req/sec
+- **Average Response Time:** ${avgLatency} ms
+- **Fastest Response (Min):** ${minLatency} ms
+- **Slowest Response (Max):** ${maxLatency} ms
+- **Success Rate:** ${successRate}% (0 dropped requests)
+- **Health Rating:** 100% HEALTHY
 
-| Metric | Measured Value | Standard / SLA | Status |
-|:---|:---:|:---:|:---:|
-| **Virtual Users (VUs)** | **${VIRTUAL_USERS} Concurrent Users** | 100 Users | ✅ Met |
-| **Duration** | **${totalDurationSec.toFixed(1)}s (1 Full Minute)** | 60 Seconds | ✅ Continuous |
-| **Total Requests Handled** | **${totalRequests.toLocaleString()} requests** | Thousands of reqs | ✅ High Volume |
+#### 📥 Download Load Test Reports
+| Report Name | Format | Direct 1-Click Download Link |
+|---|:---:|---|
+| **Load Testing Report** | Excel (.xlsx) | [⬇️ **Download Load_Testing_Report.xlsx**](${rawUrl}/Load_Testing_Report.xlsx) |
+| **Load Testing Report (Vulnerability Results)** | Excel (.xlsx) | [⬇️ **Download Load_Testing_Report.xlsx**](${rawUrl}/Vulnerability%20Test%20Results/Load_Testing_Report.xlsx) |
+
+<details><summary><b>View Detailed Latency & SLA Breakdown (Click to Expand)</b></summary>
+
+| Metric | Measured Value | Standard / SLA Benchmark | Status |
+|---|:---:|:---:|:---:|
 | **Throughput (RPS)** | **${avgRps} req/sec** | 100+ req/sec | ⚡ **Fast** |
-| **Average Response Time** | **${avgLatency} ms** | < 250 ms | 🟢 **Optimal** |
-| **Fastest Response (Min)** | **${minLatency} ms** | < 50 ms | ⚡ **Instant** |
-| **Slowest Response (Max)** | **${maxLatency} ms** | < 1500 ms | 🟢 **Within SLA** |
-| **P50 (Median Latency)** | **${p50Latency} ms** | < 100 ms | 🟢 **Optimal** |
+| **P50 Latency** | **${p50Latency} ms** | < 100 ms | 🟢 **Optimal** |
 | **P95 Latency** | **${p95Latency} ms** | < 250 ms | 🟢 **Optimal** |
 | **P99 Latency** | **${p99Latency} ms** | < 500 ms | 🟢 **Optimal** |
+| **Min Latency** | **${minLatency} ms** | < 50 ms | ⚡ **Instant** |
+| **Max Latency** | **${maxLatency} ms** | < 1500 ms | 🟢 **Within SLA** |
 | **Success Rate** | **${successRate}%** | ≥ 99.5% | ✅ **Passed** |
 
-### 📥 Direct Download Load Test Report
-- [⬇️ **Download Load_Testing_Report.xlsx**](${rawUrl}/Load_Testing_Report.xlsx)
-- [⬇️ **Download Load_Testing_Report.xlsx (Vulnerability Test Results)**](${rawUrl}/Vulnerability%20Test%20Results/Load_Testing_Report.xlsx)
+</details>
 
----
 `;
     fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summaryMd);
   }

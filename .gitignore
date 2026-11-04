@@ -45,3 +45,6 @@ server/prepare_user.cjs
 
 # Temporary Office Lock Files
 ~$*
+
+*.apk
+StreetSentinel_claude/.gradle/

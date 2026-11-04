@@ -422,7 +422,12 @@ export const useStore = create((set, get) => {
     },
 
     globalRouteCoords: [],
-    lastKnownLocation: null,
+    lastKnownLocation: (() => {
+      try {
+        const cached = localStorage.getItem('sentinel_last_coords');
+        return cached ? JSON.parse(cached) : null;
+      } catch (e) { return null; }
+    })(),
     gpsActive: false,
     lastGpsUpdateTime: 'N/A',
     setGpsActive: (status) => set({ gpsActive: status }),
@@ -550,8 +555,33 @@ export const useStore = create((set, get) => {
 
       const dispatch = async (coords) => {
         const uid = get().currentUser?.uid;
-        const finalCoords = coords || get().lastKnownLocation || { lat: 12.9716, lng: 77.5946 };
+        let finalCoords = coords || get().lastKnownLocation;
+        if (!finalCoords) {
+          try {
+            const cached = localStorage.getItem('sentinel_last_coords');
+            if (cached) finalCoords = JSON.parse(cached);
+          } catch (e) {}
+        }
+        if (!finalCoords) {
+          finalCoords = { lat: 13.0827, lng: 80.2707 }; // Fallback to Chennai Central, never Bangalore
+        }
         const locationUrl = `https://maps.google.com/?q=${finalCoords.lat},${finalCoords.lng}`;
+
+        // Reverse geocode to physical street address
+        let physicalAddress = 'Chennai, Tamil Nadu';
+        try {
+          const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${finalCoords.lat}&lon=${finalCoords.lng}&format=json`, {
+            headers: { 'Accept-Language': 'en' }
+          });
+          if (geoRes.ok) {
+            const geoData = await geoRes.json();
+            if (geoData?.display_name) {
+              physicalAddress = geoData.display_name;
+            }
+          }
+        } catch (e) {
+          console.warn('Reverse geocode in store failed:', e);
+        }
 
         // Photo capture logic completely removed as requested
         let snapshotMetadata = { aiDetection: ['Disabled'], hasImage: false };
@@ -560,9 +590,9 @@ export const useStore = create((set, get) => {
         // Floor Level (Mock data removed; actual altitude/barometer requires native plugin)
         const floorData = { floorLevel: "Location Shared", rfFingerprint: "N/A (Web)" };
 
-        // Update emergencyData with real locationUrl and floorData
+        // Update emergencyData with real locationUrl, physicalAddress and floorData
         set({
-          emergencyData: { ...get().emergencyData, locationUrl, floorData }
+          emergencyData: { ...get().emergencyData, locationUrl, physicalAddress, floorData }
         });
 
         const newAlert = {
@@ -663,6 +693,7 @@ export const useStore = create((set, get) => {
               emergencyId: globalEmergencyId,
               reason,
               location: finalCoords,
+              physicalAddress,
               mapsLink: locationUrl,
               contacts: recipientContacts,
               targetContactId: targetContact?.id || null,
@@ -710,19 +741,32 @@ export const useStore = create((set, get) => {
         try {
           navigator.geolocation.getCurrentPosition(
             (position) => {
-              dispatch({ lat: position.coords.latitude, lng: position.coords.longitude });
+              const freshCoords = { lat: position.coords.latitude, lng: position.coords.longitude };
+              try { localStorage.setItem('sentinel_last_coords', JSON.stringify(freshCoords)); } catch (e) {}
+              useStore.setState({ lastKnownLocation: freshCoords, gpsActive: true });
+              dispatch(freshCoords);
             },
             (err) => {
-              dispatch(get().lastKnownLocation);
+              console.warn("High-accuracy live GPS query error/timeout, using cached coords:", err);
+              const cached = get().lastKnownLocation || (() => {
+                try { return JSON.parse(localStorage.getItem('sentinel_last_coords')); } catch (e) { return null; }
+              })();
+              dispatch(cached);
             },
-            { timeout: 3000, enableHighAccuracy: true }
+            { timeout: 8000, enableHighAccuracy: true, maximumAge: 5000 }
           );
         } catch (err) {
           console.warn("Geolocation query failed synchronously:", err);
-          dispatch(get().lastKnownLocation);
+          const cached = get().lastKnownLocation || (() => {
+            try { return JSON.parse(localStorage.getItem('sentinel_last_coords')); } catch (e) { return null; }
+          })();
+          dispatch(cached);
         }
       } else {
-        dispatch(get().lastKnownLocation);
+        const cached = get().lastKnownLocation || (() => {
+          try { return JSON.parse(localStorage.getItem('sentinel_last_coords')); } catch (e) { return null; }
+        })();
+        dispatch(cached);
       }
     },
 

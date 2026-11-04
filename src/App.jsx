@@ -40,9 +40,10 @@ import PoliceChat from './pages/police/PoliceChat';
 // Admin Pages
 import AdminLayout from './layouts/AdminLayout';
 import AdminHome from './pages/admin/AdminHome';
-
-// Mock Layout Placeholders
-const MockDashboard = ({ role }) => <div className="flex-center" style={{height: '100vh'}}><h1 className="text-neon-blue">{role} Dashboard Placeholder</h1></div>;
+import AdminAnalytics from './pages/admin/AdminAnalytics';
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminHeatmap from './pages/admin/AdminHeatmap';
+import AdminSettings from './pages/admin/AdminSettings';
 
 function App() {
   const { isOffline, setOfflineStatus } = useStore();
@@ -64,19 +65,23 @@ function App() {
     if (typeof navigator !== 'undefined' && 'geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
+          const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          try { localStorage.setItem('sentinel_last_coords', JSON.stringify(coords)); } catch (e) {}
           useStore.setState({
-            lastKnownLocation: { lat: pos.coords.latitude, lng: pos.coords.longitude },
+            lastKnownLocation: coords,
             gpsActive: true
           });
         },
         (err) => console.warn('Global initial GPS error:', err),
-        { enableHighAccuracy: true }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 10000 }
       );
 
       watchId = navigator.geolocation.watchPosition(
         (pos) => {
+          const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          try { localStorage.setItem('sentinel_last_coords', JSON.stringify(coords)); } catch (e) {}
           useStore.setState({
-            lastKnownLocation: { lat: pos.coords.latitude, lng: pos.coords.longitude },
+            lastKnownLocation: coords,
             gpsActive: true
           });
         },
@@ -149,10 +154,10 @@ function App() {
           {/* Admin Routes */}
           <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><AdminLayout /></ProtectedRoute>}>
             <Route path="home" element={<AdminHome />} />
-            <Route path="analytics" element={<MockDashboard role="Admin Analytics" />} />
-            <Route path="users" element={<MockDashboard role="Admin Users" />} />
-            <Route path="heatmap" element={<MockDashboard role="Admin Map" />} />
-            <Route path="settings" element={<MockDashboard role="Admin Settings" />} />
+            <Route path="analytics" element={<AdminAnalytics />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="heatmap" element={<AdminHeatmap />} />
+            <Route path="settings" element={<AdminSettings />} />
           </Route>
 
           {/* Catch-all Fallback Route */}

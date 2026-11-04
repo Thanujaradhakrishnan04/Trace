@@ -24,15 +24,18 @@ const allowedOrigins = [
   'http://localhost:5173',
   'https://localhost:4173',
   'http://localhost:4173',
+  'https://thanujaradhakrishnan04.github.io',
 ];
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (e.g. server-to-server, curl in dev)
+    // Allow requests with no origin (e.g. server-to-server, curl in dev, mobile APK webview)
     if (!origin) {
       return callback(null, true);
     }
     const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
-    if (allowedOrigins.includes(origin) || isLocalhost) {
+    const isGithubPages = typeof origin === 'string' && origin.includes('github.io');
+    const isCapacitor = typeof origin === 'string' && (origin.startsWith('capacitor://') || origin.startsWith('http://localhost'));
+    if (allowedOrigins.includes(origin) || isLocalhost || isGithubPages || isCapacitor) {
       callback(null, true);
     } else {
       console.warn(`[CORS] Rejected origin: ${origin}`);
@@ -189,7 +192,7 @@ app.post('/emergency/dispatch', emergencyLimiter, authenticateToken, async (req,
     // Use verified UID from token — never trust client-supplied userId
     const uid = req.user.uid;
 
-    const { emergencyId, reason, location, mapsLink, contacts, targetContactId, userName: bodyName, userPhone: bodyPhone, photo } = req.body;
+    const { emergencyId, reason, location, mapsLink, contacts, targetContactId, userName: bodyName, userPhone: bodyPhone, photo, physicalAddress } = req.body;
 
     // Validate and sanitize inputs
     const safeReason = sanitizeString(reason, 100) || 'Emergency';
@@ -298,7 +301,7 @@ app.post('/emergency/dispatch', emergencyLimiter, authenticateToken, async (req,
         if (!sentEmails.has(cleanEmail)) {
           sentEmails.add(cleanEmail);
           console.log(`Sending Emergency Email to: ${maskEmail(cleanEmail)}`);
-          const emailResult = await sendEmergencyEmail(cleanEmail, safeLocation, userName, userPhone, photo);
+          const emailResult = await sendEmergencyEmail(cleanEmail, safeLocation, userName, userPhone, photo, physicalAddress);
           if (emailResult.success) {
             emailStatus = 'SUCCESS';
           }

@@ -107,14 +107,35 @@ const SafeWalk = () => {
 
   // ─── When destination chosen — fetch BOTH routes ─────────────────────────────
   const fetchBothRoutes = async (dest, loc) => {
-    if (!loc) return;
+    let effectiveLoc = loc || userLoc;
+    if (!effectiveLoc) {
+      try {
+        const cached = localStorage.getItem('sentinel_last_coords');
+        if (cached) effectiveLoc = JSON.parse(cached);
+      } catch (e) {}
+    }
+    if (!effectiveLoc && typeof navigator !== 'undefined' && navigator.geolocation) {
+      try {
+        effectiveLoc = await new Promise((resolve) => {
+          navigator.geolocation.getCurrentPosition(
+            pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+            () => resolve(null),
+            { timeout: 4000, enableHighAccuracy: true }
+          );
+        });
+      } catch (e) {}
+    }
+    if (!effectiveLoc) {
+      effectiveLoc = { lat: 13.0827, lng: 80.2707 };
+    }
+
     setIsLoadingRoute(true);
     setFastestRoute(null);
     setSafestRoute(null);
 
     try {
       // Fastest route — direct foot path
-      const fast = await getRoute(loc.lat, loc.lng, dest.lat, dest.lng, 'foot');
+      const fast = await getRoute(effectiveLoc.lat, effectiveLoc.lng, dest.lat, dest.lng, 'foot');
       if (fast) {
         const fastReport = analyzeRouteSafety(fast.coordinates, safeZones);
         setFastestRoute({
@@ -125,12 +146,12 @@ const SafeWalk = () => {
           report: fastReport,
         });
       } else {
-        const d = calculateDistance(loc.lat, loc.lng, dest.lat, dest.lng) / 1000;
+        const d = calculateDistance(effectiveLoc.lat, effectiveLoc.lng, dest.lat, dest.lng) / 1000;
         setFastestRoute({ coords: [], distance: d.toFixed(2), eta: Math.round(d * 12), safetyScore: 70, report: null });
       }
 
       // Safest route — waypointed via nearest police/hospital
-      const safe = await getSafestRoute(loc.lat, loc.lng, dest.lat, dest.lng, safeZones);
+      const safe = await getSafestRoute(effectiveLoc.lat, effectiveLoc.lng, dest.lat, dest.lng, safeZones);
       if (safe) {
         const safeReport = analyzeRouteSafety(safe.coordinates, safeZones);
         const bumpedScore = Math.min(98, safeReport.estimatedScore + 10); // guaranteed to be higher than fastest
@@ -149,6 +170,12 @@ const SafeWalk = () => {
       setIsLoadingRoute(false);
     }
   };
+
+  useEffect(() => {
+    if (destination && !fastestRoute && !isLoadingRoute) {
+      fetchBothRoutes(destination, userLoc);
+    }
+  }, [userLoc]);
 
   const selectDestination = async (result) => {
     const dest = { lat: parseFloat(result.lat), lng: parseFloat(result.lon), name: result.display_name };

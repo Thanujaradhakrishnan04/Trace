@@ -33,7 +33,7 @@ const transporter = nodemailer.createTransport({
 });
 console.log('[Email] Initialized email dispatch service (Resend, Brevo, SendGrid, Gmail SMTP & Simulated)');
 
-const sendEmergencyEmail = async (contactEmail, location, userName, userPhone, photoBase64 = null) => {
+const sendEmergencyEmail = async (contactEmail, location, userName, userPhone, photoBase64 = null, physicalAddress = null) => {
   const safeName = sanitize(userName);
   const safePhone = sanitize(userPhone);
   const safeEmail = sanitize(contactEmail) || 'test@example.com';
@@ -41,14 +41,35 @@ const sendEmergencyEmail = async (contactEmail, location, userName, userPhone, p
     ? `https://maps.google.com/?q=${location.lat},${location.lng}` 
     : 'Location not available';
 
-  const emailSubject = `🚨 STREETSENTINEL EMERGENCY ALERT - ${safeName} may be in danger`;
-  const emailText = `STREETSENTINEL EMERGENCY ALERT\n\nUser: ${safeName}\nPhone: ${safePhone}\n\nLive Location:\n${mapsLink}\n\nTimestamp: ${new Date().toLocaleString()}\n\nPossible distress detected.\n\nPlease contact immediately.`;
+  // Fast reverse geocode if physicalAddress not already resolved
+  let resolvedAddress = physicalAddress;
+  if (!resolvedAddress && location && location.lat && location.lng) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 2500);
+      const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${location.lat}&lon=${location.lng}&format=json`, {
+        headers: { 'User-Agent': 'StreetSentinel-Emergency/1.0' },
+        signal: controller.signal
+      });
+      clearTimeout(timeout);
+      if (geoRes.ok) {
+        const geoData = await geoRes.json();
+        resolvedAddress = geoData.display_name;
+      }
+    } catch (e) {
+      console.warn('[ReverseGeocode] Lookup timed out or failed:', e.message);
+    }
+  }
+
+  const emailSubject = `🚨 STREETSENTINEL EMERGENCY ALERT - ${safeName} in ${resolvedAddress ? resolvedAddress.split(',')[0] : 'Emergency SOS'}`;
+  const emailText = `STREETSENTINEL EMERGENCY ALERT\n\nUser: ${safeName}\nPhone: ${safePhone}\n\nPhysical Location:\n${resolvedAddress || 'Coordinates available below'}\n\nLive Coordinates:\n${location ? `${location.lat}, ${location.lng}` : 'Unavailable'}\n\nGoogle Maps Link:\n${mapsLink}\n\nTimestamp: ${new Date().toLocaleString()}\n\nPossible distress detected.\nPlease contact immediately.`;
   const emailHtml = `
     <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; margin: 0 auto; border: 2px solid #e11d48; border-radius: 12px;">
       <h2 style="color: #e11d48; margin-top: 0;">🚨 STREETSENTINEL EMERGENCY DISTRESS ALERT 🚨</h2>
       <p style="font-size: 16px;"><strong>${safeName}</strong> triggered an emergency SOS distress alert.</p>
       <p><strong>Phone:</strong> ${safePhone || 'Not provided'}</p>
-      <p style="font-size: 16px;"><strong>Live GPS Location:</strong> <br/><a href="${mapsLink}" style="color: #2563eb; font-weight: bold; font-size: 15px;">📍 Open in Google Maps</a></p>
+      ${resolvedAddress ? `<p style="font-size: 15px; background: #fff1f2; padding: 10px; border-radius: 8px; border-left: 4px solid #e11d48;"><strong>📍 Verified Physical Address:</strong><br/>${resolvedAddress}</p>` : ''}
+      <p style="font-size: 16px;"><strong>Live GPS Navigation:</strong> <br/><a href="${mapsLink}" style="color: #2563eb; font-weight: bold; font-size: 15px;">📍 Open in Google Maps</a></p>
       <p><strong>Coordinates:</strong> ${location ? `${location.lat}, ${location.lng}` : 'Unavailable'}</p>
       <p><strong>Timestamp:</strong> ${new Date().toLocaleString()}</p>
       ${photoBase64 ? `<p><strong>Captured Environment Snapshot:</strong></p><p><img src="cid:environment_snapshot" alt="Captured Environment" style="max-width: 100%; max-height: 400px; height: auto; border-radius: 8px;" /></p>` : ''}

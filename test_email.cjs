@@ -44,8 +44,8 @@ async function testEmail() {
     
     const postData = JSON.stringify({
       reason: "TEST ALERT",
-      location: { lat: 12.9716, lng: 77.5946 },
-      mapsLink: "https://maps.google.com/?q=12.9716,77.5946",
+      location: { lat: 13.0265143, lng: 80.0159234 },
+      mapsLink: "https://maps.google.com/?q=13.0265143,80.0159234",
       userName: "Thanujar",
       userPhone: "+91 98765 43210",
       contacts: [

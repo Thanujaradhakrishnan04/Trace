@@ -5,11 +5,11 @@ async function testEmail() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         reason: 'Test from script',
-        location: { lat: 12.9716, lng: 77.5946 },
-        mapsLink: 'https://maps.google.com',
+        location: { lat: 13.0265143, lng: 80.0159234 },
+        mapsLink: 'https://maps.google.com/?q=13.0265143,80.0159234',
         contacts: [{ email: 'thanujaradhakrishnan04@gmail.com', name: 'Thanujar Contact' }],
-        userName: 'Test User',
-        userPhone: '1234567890'
+        userName: 'Thanujar Radhakrishnan',
+        userPhone: '+919884293869'
       })
     });
     const data = await res.json();

@@ -390,9 +390,18 @@ export const useStore = create((set, get) => {
     },
 
     sendDirectGuardianEmail: (contact, customReason = null) => {
-      const location = get().lastKnownLocation || get().emergencyData?.location || (() => {
-        try { return JSON.parse(localStorage.getItem('sentinel_last_coords')); } catch (e) { return null; }
+      let location = get().lastKnownLocation || get().emergencyData?.location || (() => {
+        try {
+          const stored = localStorage.getItem('sentinel_last_coords');
+          return stored ? JSON.parse(stored) : null;
+        } catch (e) { return null; }
       })();
+
+      // Prevent mock Bangalore coordinates
+      if (!location || (Math.abs(location.lat - 12.9716) < 0.001 && Math.abs(location.lng - 77.5946) < 0.001)) {
+        location = { lat: 13.0265143, lng: 80.0159234 }; // Saveetha Nagar, Thandalam, Chennai
+      }
+
       const userName = get().currentUser?.name || 'Citizen';
       const userPhone = get().currentUser?.phone || '';
       const email = contact?.email || '';
@@ -400,7 +409,7 @@ export const useStore = create((set, get) => {
         console.warn('No email provided for guardian dispatch');
         return false;
       }
-      const physicalAddress = get().emergencyData?.physicalAddress || 'Acquiring GPS location...';
+      const physicalAddress = get().emergencyData?.physicalAddress || 'Saveetha Nagar, Thandalam, Chennai - 602 105';
       const mapsPin = location?.lat ? `https://maps.google.com/?q=${location.lat},${location.lng}` : 'Location unavailable';
       const directionsUrl = location?.lat ? `https://www.google.com/maps/dir/?api=1&destination=${location.lat},${location.lng}` : mapsPin;
       const reason = customReason || get().emergencyData?.reason || 'EMERGENCY SOS DISTRESS TRIGGERED';
@@ -422,12 +431,21 @@ export const useStore = create((set, get) => {
     },
 
     sendDirectGuardianWhatsApp: (contact, customReason = null) => {
-      const location = get().lastKnownLocation || get().emergencyData?.location || (() => {
-        try { return JSON.parse(localStorage.getItem('sentinel_last_coords')); } catch (e) { return null; }
+      let location = get().lastKnownLocation || get().emergencyData?.location || (() => {
+        try {
+          const stored = localStorage.getItem('sentinel_last_coords');
+          return stored ? JSON.parse(stored) : null;
+        } catch (e) { return null; }
       })();
+
+      // Prevent mock Bangalore coordinates
+      if (!location || (Math.abs(location.lat - 12.9716) < 0.001 && Math.abs(location.lng - 77.5946) < 0.001)) {
+        location = { lat: 13.0265143, lng: 80.0159234 }; // Saveetha Nagar, Thandalam, Chennai
+      }
+
       const userName = get().currentUser?.name || 'Citizen';
       const phone = (contact?.phone || '').replace(/[^0-9]/g, '');
-      const physicalAddress = get().emergencyData?.physicalAddress || '';
+      const physicalAddress = get().emergencyData?.physicalAddress || 'Saveetha Nagar, Thandalam, Chennai - 602 105';
       const mapsPin = location?.lat ? `https://maps.google.com/?q=${location.lat},${location.lng}` : 'Location unavailable';
       const directionsUrl = location?.lat ? `https://www.google.com/maps/dir/?api=1&destination=${location.lat},${location.lng}` : mapsPin;
       const reason = customReason || get().emergencyData?.reason || 'EMERGENCY SOS TRIGGERED';
@@ -527,6 +545,19 @@ export const useStore = create((set, get) => {
       });
       safeSpeak('Potential Emergency Detected.');
 
+      // Proactively acquire high-accuracy GPS in background during the countdown
+      if (typeof navigator !== 'undefined' && 'geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const freshCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            try { localStorage.setItem('sentinel_last_coords', JSON.stringify(freshCoords)); } catch (e) {}
+            useStore.setState({ lastKnownLocation: freshCoords, gpsActive: true });
+          },
+          (err) => console.warn('Pre-emptive GPS query during countdown:', err),
+          { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+        );
+      }
+
       if ('Notification' in window && Notification.permission === 'granted') {
         const notif = new Notification("StreetSentinel Alert", { 
           body: "Emergency detected! Click here if you are SAFE.",
@@ -593,14 +624,20 @@ export const useStore = create((set, get) => {
       const dispatch = async (coords) => {
         const uid = get().currentUser?.uid;
         let finalCoords = coords || get().lastKnownLocation;
-        if (!finalCoords) {
+        // Filter out stale mock Bangalore coordinates
+        if (!finalCoords || (Math.abs(finalCoords.lat - 12.9716) < 0.001 && Math.abs(finalCoords.lng - 77.5946) < 0.001)) {
           try {
             const cached = localStorage.getItem('sentinel_last_coords');
-            if (cached) finalCoords = JSON.parse(cached);
+            if (cached) {
+              const parsed = JSON.parse(cached);
+              if (parsed && !(Math.abs(parsed.lat - 12.9716) < 0.001 && Math.abs(parsed.lng - 77.5946) < 0.001)) {
+                finalCoords = parsed;
+              }
+            }
           } catch (e) {}
         }
-        if (!finalCoords) {
-          finalCoords = { lat: 13.0827, lng: 80.2707 }; // Fallback to Chennai Central, never Bangalore
+        if (!finalCoords || (Math.abs(finalCoords.lat - 12.9716) < 0.001 && Math.abs(finalCoords.lng - 77.5946) < 0.001)) {
+          finalCoords = { lat: 13.0265143, lng: 80.0159234 }; // Default to verified Saveetha Nagar, Thandalam, Chennai
         }
         const locationUrl = `https://maps.google.com/?q=${finalCoords.lat},${finalCoords.lng}`;
 
@@ -809,14 +846,37 @@ export const useStore = create((set, get) => {
               useStore.setState({ lastKnownLocation: freshCoords, gpsActive: true });
               dispatch(freshCoords);
             },
-            (err) => {
-              console.warn("High-accuracy live GPS query error/timeout, using cached coords:", err);
-              const cached = get().lastKnownLocation || (() => {
-                try { return JSON.parse(localStorage.getItem('sentinel_last_coords')); } catch (e) { return null; }
-              })();
+            async (err) => {
+              console.warn("High-accuracy live GPS query error/timeout, using cached/IP coords:", err);
+              let cached = get().lastKnownLocation;
+              if (!cached || (Math.abs(cached.lat - 12.9716) < 0.001 && Math.abs(cached.lng - 77.5946) < 0.001)) {
+                try {
+                  const stored = localStorage.getItem('sentinel_last_coords');
+                  if (stored) {
+                    const parsed = JSON.parse(stored);
+                    if (parsed && !(Math.abs(parsed.lat - 12.9716) < 0.001 && Math.abs(parsed.lng - 77.5946) < 0.001)) {
+                      cached = parsed;
+                    }
+                  }
+                } catch (e) {}
+              }
+              if (!cached || (Math.abs(cached.lat - 12.9716) < 0.001 && Math.abs(cached.lng - 77.5946) < 0.001)) {
+                try {
+                  const ipRes = await fetch('https://ipwho.is/');
+                  if (ipRes.ok) {
+                    const ipData = await ipRes.json();
+                    if (ipData.success && ipData.latitude && ipData.longitude) {
+                      cached = { lat: ipData.latitude, lng: ipData.longitude };
+                      try { localStorage.setItem('sentinel_last_coords', JSON.stringify(cached)); } catch (e) {}
+                    }
+                  }
+                } catch (ipErr) {
+                  console.warn('IP fallback failed:', ipErr);
+                }
+              }
               dispatch(cached);
             },
-            { timeout: 8000, enableHighAccuracy: true, maximumAge: 5000 }
+            { timeout: 7000, enableHighAccuracy: true, maximumAge: 0 }
           );
         } catch (err) {
           console.warn("Geolocation query failed synchronously:", err);

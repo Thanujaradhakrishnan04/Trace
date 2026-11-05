@@ -91,7 +91,7 @@ fun PoliceDashboardScreen(
                                     setTileSource(TileSourceFactory.MAPNIK)
                                     setMultiTouchControls(true)
                                     controller.setZoom(12.0)
-                                    controller.setCenter(OsmGeoPoint(12.9716, 77.5946))
+                                    controller.setCenter(OsmGeoPoint(13.0265143, 80.0159234))
                                     // Fix: prevent LazyColumn from stealing touch events
                                     setOnTouchListener { v, _ ->
                                         v.parent?.requestDisallowInterceptTouchEvent(true)
@@ -267,7 +267,7 @@ fun PoliceMapScreen(
                         setTileSource(TileSourceFactory.MAPNIK)
                         setMultiTouchControls(true)
                         controller.setZoom(12.0)
-                        controller.setCenter(OsmGeoPoint(12.9716, 77.5946))
+                        controller.setCenter(OsmGeoPoint(13.0265143, 80.0159234))
                         // Fix: prevent parent scroll from stealing touch events
                         setOnTouchListener { v, _ ->
                             v.parent?.requestDisallowInterceptTouchEvent(true)

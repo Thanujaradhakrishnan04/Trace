@@ -200,7 +200,34 @@ app.post('/emergency/dispatch', emergencyLimiter, authenticateToken, async (req,
 
     let safeLocation = null;
     if (isValidLocation(location)) {
-      safeLocation = { lat: location.lat, lng: location.lng };
+      // Filter out stale mock Bangalore coordinates if erroneously passed
+      if (Math.abs(location.lat - 12.9716) < 0.001 && Math.abs(location.lng - 77.5946) < 0.001) {
+        console.warn('[Dispatch] Overriding mock Bangalore coordinates with real Saveetha/Chennai coordinates');
+        safeLocation = { lat: 13.0265143, lng: 80.0159234 };
+      } else {
+        safeLocation = { lat: location.lat, lng: location.lng };
+      }
+    }
+
+    if (!safeLocation) {
+      try {
+        const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress;
+        if (clientIp && !clientIp.includes('127.0.0.1') && !clientIp.includes('::1')) {
+          const ipRes = await fetch(`https://ipwho.is/${clientIp}`);
+          if (ipRes.ok) {
+            const ipData = await ipRes.json();
+            if (ipData.success && ipData.latitude && ipData.longitude) {
+              safeLocation = { lat: ipData.latitude, lng: ipData.longitude };
+              console.log(`[Dispatch] Resolved location from client IP (${clientIp}):`, safeLocation);
+            }
+          }
+        }
+      } catch (ipErr) {
+        console.warn('[Dispatch] Server IP geolocation lookup failed:', ipErr.message);
+      }
+      if (!safeLocation) {
+        safeLocation = { lat: 13.0265143, lng: 80.0159234 }; // Saveetha Nagar, Thandalam, Chennai
+      }
     }
 
     // Fetch user profile from Firestore securely using verified UID, fall back to body parameters

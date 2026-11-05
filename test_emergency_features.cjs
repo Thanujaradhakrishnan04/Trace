@@ -46,8 +46,8 @@ async function runEmergencyTests() {
         getCurrentPosition: function(success, error, options) {
           success({
             coords: {
-              latitude: 12.9716,
-              longitude: 77.5946,
+              latitude: 13.0265143,
+              longitude: 80.0159234,
               accuracy: 10
             },
             timestamp: Date.now()
@@ -56,8 +56,8 @@ async function runEmergencyTests() {
         watchPosition: function(success, error, options) {
           success({
             coords: {
-              latitude: 12.9716,
-              longitude: 77.5946,
+              latitude: 13.0265143,
+              longitude: 80.0159234,
               accuracy: 10
             },
             timestamp: Date.now()

@@ -38,7 +38,23 @@ const EmergencyOverlay = () => {
     if (useStore.getState().countdownTimer) {
       clearInterval(useStore.getState().countdownTimer);
     }
-    sendEmergencyAlert('Manual SOS - Send Location Override');
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          sendEmergencyAlert('Manual SOS - Send Location Override', {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude
+          });
+        },
+        (err) => {
+          console.warn('GPS query error on Send Location Now:', err);
+          sendEmergencyAlert('Manual SOS - Send Location Override');
+        },
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+      );
+    } else {
+      sendEmergencyAlert('Manual SOS - Send Location Override');
+    }
   };
 
   return (

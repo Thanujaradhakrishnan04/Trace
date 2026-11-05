@@ -600,7 +600,7 @@ class SentinelViewModel(app: Application) : AndroidViewModel(app) {
             else "CRITICAL ALERT. Emergency Mode Activated. Dispatching authorities."
 
             var coords = lastKnownLocation.value
-            if (coords == null || (coords.lat == 13.0827 && coords.lng == 80.2707) || (coords.lat == 12.9716 && coords.lng == 77.5946)) {
+            if (coords == null || (coords.lat == 13.0827 && coords.lng == 80.2707) || (coords.lat == 13.0265143 && coords.lng == 80.0159234)) {
                 // If it is null or a default mock position, try to get a fresh high-accuracy GPS fix
                 val freshLoc = locationService.getCurrentLocation()
                 if (freshLoc != null) {
@@ -614,7 +614,7 @@ class SentinelViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
             if (coords == null) {
-                coords = GeoPoint(12.9716, 77.5946)
+                coords = GeoPoint(13.0265143, 80.0159234)
             }
             val mapsLink = locationService.mapsLinkFor(coords)
             _emergencyData.value = _emergencyData.value?.copy(locationUrl = mapsLink)

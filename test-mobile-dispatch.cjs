@@ -3,8 +3,8 @@ const http = require('http');
 const body = JSON.stringify({
   emergencyId: "test_mobile_123",
   reason: "Test Mobile Distress",
-  location: { lat: 12.9716, lng: 77.5946 },
-  mapsLink: "https://maps.google.com/?q=12.9716,77.5946",
+  location: { lat: 13.0265143, lng: 80.0159234 },
+  mapsLink: "https://maps.google.com/?q=13.0265143,80.0159234",
   contacts: [
     {
       id: "test_contact_1",
@@ -29,15 +29,12 @@ const req = http.request({
     'Content-Type': 'application/json',
     'Authorization': 'Bearer mock.jwt.token'
   }
-}, res => {
+}, (res) => {
   let data = '';
   res.on('data', chunk => data += chunk);
-  res.on('end', () => {
-    console.log("Status:", res.statusCode);
-    console.log("Response:", data);
-  });
+  res.on('end', () => console.log('Response:', data));
 });
 
-req.on('error', e => console.error(e));
+req.on('error', err => console.error('Req error:', err));
 req.write(body);
 req.end();

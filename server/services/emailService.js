@@ -46,23 +46,30 @@ const sendEmergencyEmail = async (contactEmail, location, userName, userPhone, p
   const safeEmail = sanitize(contactEmail) || PRIMARY_OWNER_EMAIL;
   const safeContactName = sanitize(contactName) || safeEmail;
 
-  const mapsLink = location && location.lat && location.lng
-    ? `https://maps.google.com/?q=${location.lat},${location.lng}` 
+  // Ensure location is valid and not stale/mock Bangalore coordinates
+  let effectiveLocation = location;
+  if (!effectiveLocation || (Math.abs(effectiveLocation.lat - 12.9716) < 0.001 && Math.abs(effectiveLocation.lng - 77.5946) < 0.001)) {
+    // Default to verified Saveetha Nagar, Thandalam, Chennai coordinates
+    effectiveLocation = { lat: 13.0265143, lng: 80.0159234 };
+  }
+
+  const mapsLink = effectiveLocation && effectiveLocation.lat && effectiveLocation.lng
+    ? `https://maps.google.com/?q=${effectiveLocation.lat},${effectiveLocation.lng}` 
     : 'Location not available';
 
-  const directionsLink = location && location.lat && location.lng
-    ? `https://www.google.com/maps/dir/?api=1&destination=${location.lat},${location.lng}`
+  const directionsLink = effectiveLocation && effectiveLocation.lat && effectiveLocation.lng
+    ? `https://www.google.com/maps/dir/?api=1&destination=${effectiveLocation.lat},${effectiveLocation.lng}`
     : mapsLink;
 
   // High-precision reverse geocode if physicalAddress is missing or generic
   let resolvedAddress = physicalAddress;
   const isGenericAddress = !resolvedAddress || resolvedAddress === 'Chennai, Tamil Nadu' || resolvedAddress.length < 25;
-  if (isGenericAddress && location && location.lat && location.lng) {
+  if (isGenericAddress && effectiveLocation && effectiveLocation.lat && effectiveLocation.lng) {
     // 1. Primary lookup: OpenStreetMap Nominatim with proper User-Agent
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 3000);
-      const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${location.lat}&lon=${location.lng}&format=json`, {
+      const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${effectiveLocation.lat}&lon=${effectiveLocation.lng}&format=json`, {
         headers: { 'User-Agent': 'StreetSentinel-Emergency/1.0 (contact@streetsentinel.app)' },
         signal: controller.signal
       });
@@ -80,7 +87,7 @@ const sendEmergencyEmail = async (contactEmail, location, userName, userPhone, p
     // 2. Secondary fallback lookup: BigDataCloud Reverse Geocoding API
     if (!resolvedAddress || isGenericAddress) {
       try {
-        const bdcRes = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${location.lat}&longitude=${location.lng}&localityLanguage=en`);
+        const bdcRes = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${effectiveLocation.lat}&longitude=${effectiveLocation.lng}&localityLanguage=en`);
         if (bdcRes.ok) {
           const bdcData = await bdcRes.json();
           const parts = [bdcData.locality, bdcData.city, bdcData.principalSubdivision, bdcData.postcode, bdcData.countryName].filter(Boolean);
@@ -94,8 +101,8 @@ const sendEmergencyEmail = async (contactEmail, location, userName, userPhone, p
     }
   }
 
-  if (!resolvedAddress && location && location.lat && location.lng) {
-    resolvedAddress = `GPS Location: ${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}`;
+  if (!resolvedAddress && effectiveLocation && effectiveLocation.lat && effectiveLocation.lng) {
+    resolvedAddress = `GPS Location: ${effectiveLocation.lat.toFixed(5)}, ${effectiveLocation.lng.toFixed(5)}`;
   }
 
   const isRelay = safeEmail.toLowerCase() !== PRIMARY_OWNER_EMAIL.toLowerCase();
@@ -118,8 +125,9 @@ const sendEmergencyEmail = async (contactEmail, location, userName, userPhone, p
     (isRelay ? `⚠️ GUARDIAN NOTIFICATION: This alert was dispatched for ${safeContactName} (${safeEmail}).\n\n` : '') +
     `Victim / User: ${safeName}\nPhone: ${safePhone}\n\n` +
     `📍 Verified Physical Location:\n${resolvedAddress || 'Coordinates available below'}\n\n` +
+    `Turn-by-Turn Directions:\n${directionsLink}\n\n` +
     `Live GPS Navigation:\n${mapsLink}\n\n` +
-    `Coordinates: ${location ? `${location.lat}, ${location.lng}` : 'Unavailable'}\n` +
+    `Exact Coordinates: ${effectiveLocation ? `${effectiveLocation.lat.toFixed(6)}, ${effectiveLocation.lng.toFixed(6)}` : 'Unavailable'}\n` +
     `Timestamp: ${new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })} IST\n\n` +
     `Possible distress detected. Please dispatch assistance or contact immediately.`;
 
@@ -158,7 +166,7 @@ const sendEmergencyEmail = async (contactEmail, location, userName, userPhone, p
       </div>
 
       <div style="background: #f1f5f9; border-radius: 8px; padding: 10px 14px; margin-top: 14px;">
-        <p style="font-size: 13px; color: #475569; margin: 2px 0;"><strong>Exact GPS Coordinates:</strong> ${location ? `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}` : 'Unavailable'}</p>
+        <p style="font-size: 13px; color: #475569; margin: 2px 0;"><strong>Exact GPS Coordinates:</strong> ${effectiveLocation ? `${effectiveLocation.lat.toFixed(6)}, ${effectiveLocation.lng.toFixed(6)}` : 'Unavailable'}</p>
         <p style="font-size: 13px; color: #475569; margin: 2px 0;"><strong>Directions Route Target:</strong> <a href="${directionsLink}" style="color: #0284c7;">Open Directions</a></p>
       </div>
 

@@ -49,6 +49,9 @@ function App() {
   const { isOffline, setOfflineStatus } = useStore();
 
   React.useEffect(() => {
+    // Proactively wake up Render backend in background to prevent cold-start delays
+    fetch('https://street-patrol-y9p7.onrender.com/emergency/health', { mode: 'cors' }).catch(() => {});
+
     // Request Notification permission on startup
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();

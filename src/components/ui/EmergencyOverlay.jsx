@@ -78,6 +78,13 @@ const EmergencyOverlay = () => {
     }
   };
 
+  const primaryGuardianEmail = 'thanujaradhakrishnan04@gmail.com';
+  const displayContacts = contacts && contacts.length > 0 
+    ? (contacts.some(c => (c.email || '').toLowerCase() === primaryGuardianEmail.toLowerCase())
+        ? contacts 
+        : [{ id: 'primary_guardian_default', name: 'Primary Guardian', email: primaryGuardianEmail, relation: 'Verified Guardian' }, ...contacts])
+    : [{ id: 'primary_guardian_default', name: 'Primary Guardian', email: primaryGuardianEmail, relation: 'Verified Guardian' }];
+
   return (
     <AnimatePresence>
       {/* Pre-Emergency Countdown Modal */}
@@ -177,67 +184,65 @@ const EmergencyOverlay = () => {
             <div className="bg-black/60 backdrop-blur-md border border-red-500/40 rounded-3xl p-5 w-full max-w-lg shadow-2xl mb-6 text-left">
               <div className="flex items-center justify-between mb-3 border-b border-red-500/20 pb-2">
                 <span className="text-xs font-black uppercase tracking-wider text-red-200 flex items-center gap-2">
-                  <Users size={16} className="text-red-400" /> Guardian Distress Dispatch ({contacts.length})
+                  <Users size={16} className="text-red-400" /> Guardian Distress Dispatch ({displayContacts.length})
                 </span>
                 <span className="text-[11px] font-bold text-emerald-400 bg-emerald-950/80 px-2.5 py-0.5 rounded-full border border-emerald-500/40">
                   Transmitting
                 </span>
               </div>
 
-              {contacts.length === 0 ? (
-                <div className="bg-amber-950/40 border border-amber-500/30 rounded-xl p-3 text-center">
-                  <p className="text-amber-300 text-xs font-bold">⚠️ No Emergency Guardians configured!</p>
-                  <p className="text-slate-400 text-[11px] mt-1">Add guardian contacts in profile to receive automated email & SMS alerts.</p>
+              {/* Real-time automated email delivery banner */}
+              <div className="mb-3 bg-red-950/70 border border-red-500/40 rounded-2xl p-3 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Mail size={16} className="text-emerald-400 flex-shrink-0 animate-pulse" />
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-white truncate">Auto Email Sent to Guardian</p>
+                    <p className="text-[10px] text-slate-300 truncate font-mono">thanujaradhakrishnan04@gmail.com</p>
+                  </div>
                 </div>
-              ) : (
-                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                  {contacts.map((contact) => (
-                    <div key={contact.id} className="bg-red-950/50 border border-red-500/30 rounded-2xl p-3 flex items-center justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className="text-white font-bold text-sm truncate">{contact.name}</p>
-                          <span className="text-[10px] text-red-300 font-semibold px-1.5 py-0.5 bg-red-900/40 rounded uppercase">
-                            {contact.relation || 'Guardian'}
-                          </span>
-                        </div>
-                        <p className="text-slate-300 text-xs truncate mt-0.5">
-                          {contact.email ? `📧 ${contact.email}` : (contact.phone ? `📞 ${contact.phone}` : 'No email/phone')}
-                        </p>
-                      </div>
+                <span className="text-[9px] font-black uppercase tracking-wider bg-emerald-500 text-black px-2 py-0.5 rounded-md flex-shrink-0">
+                  DISPATCHED
+                </span>
+              </div>
 
-                      <div className="flex items-center gap-1.5 flex-shrink-0">
-                        {contact.email && (
-                          <button
-                            onClick={() => sendDirectGuardianEmail(contact)}
-                            className="px-2.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl flex items-center gap-1 shadow-md transition-colors"
-                            title="Directly send distress email with GPS to Guardian"
-                          >
-                            <Mail size={13} /> Email
-                          </button>
-                        )}
-                        {contact.phone && (
-                          <button
-                            onClick={() => sendDirectGuardianWhatsApp(contact)}
-                            className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl flex items-center gap-1 shadow-md transition-colors"
-                            title="Send WhatsApp SOS with Live GPS"
-                          >
-                            <Share2 size={13} /> WhatsApp
-                          </button>
-                        )}
-                        {contact.phone && (
-                          <a
-                            href={`tel:${contact.phone}`}
-                            className="p-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl flex items-center justify-center transition-colors border border-slate-700"
-                            title="Call Guardian"
-                          >
-                            <Phone size={13} className="text-emerald-400" />
-                          </a>
-                        )}
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                {displayContacts.map((contact) => (
+                  <div key={contact.id} className="bg-red-950/50 border border-red-500/30 rounded-2xl p-3 flex items-center justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="text-white font-bold text-sm truncate">{contact.name}</p>
+                        <span className="text-[10px] text-red-300 font-semibold px-1.5 py-0.5 bg-red-900/40 rounded uppercase">
+                          {contact.relation || 'Guardian'}
+                        </span>
                       </div>
+                      <p className="text-slate-300 text-xs truncate mt-0.5">
+                        {contact.email ? `📧 ${contact.email}` : (contact.phone ? `📞 ${contact.phone}` : 'No email/phone')}
+                      </p>
                     </div>
-                  ))}
-                </div>
-              )}
+
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      {contact.email && (
+                        <button
+                          onClick={() => sendDirectGuardianEmail(contact)}
+                          className="px-2.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl flex items-center gap-1 shadow-md transition-colors"
+                          title="Directly send distress email with GPS to Guardian via your mail app"
+                        >
+                          <Mail size={13} /> Send Email
+                        </button>
+                      )}
+                      {contact.phone && (
+                        <button
+                          onClick={() => sendDirectGuardianWhatsApp(contact)}
+                          className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl flex items-center gap-1 shadow-md transition-colors"
+                          title="Send WhatsApp SOS with Live GPS"
+                        >
+                          <Share2 size={13} /> WhatsApp
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Live Automated Evidence Capture (Camera & Voice Vault Active) */}

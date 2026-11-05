@@ -50,24 +50,52 @@ const sendEmergencyEmail = async (contactEmail, location, userName, userPhone, p
     ? `https://maps.google.com/?q=${location.lat},${location.lng}` 
     : 'Location not available';
 
-  // Fast reverse geocode if physicalAddress not already resolved
+  const directionsLink = location && location.lat && location.lng
+    ? `https://www.google.com/maps/dir/?api=1&destination=${location.lat},${location.lng}`
+    : mapsLink;
+
+  // High-precision reverse geocode if physicalAddress is missing or generic
   let resolvedAddress = physicalAddress;
-  if (!resolvedAddress && location && location.lat && location.lng) {
+  const isGenericAddress = !resolvedAddress || resolvedAddress === 'Chennai, Tamil Nadu' || resolvedAddress.length < 25;
+  if (isGenericAddress && location && location.lat && location.lng) {
+    // 1. Primary lookup: OpenStreetMap Nominatim with proper User-Agent
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 2500);
+      const timeout = setTimeout(() => controller.abort(), 3000);
       const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${location.lat}&lon=${location.lng}&format=json`, {
-        headers: { 'User-Agent': 'StreetSentinel-Emergency/1.0' },
+        headers: { 'User-Agent': 'StreetSentinel-Emergency/1.0 (contact@streetsentinel.app)' },
         signal: controller.signal
       });
       clearTimeout(timeout);
       if (geoRes.ok) {
         const geoData = await geoRes.json();
-        resolvedAddress = geoData.display_name;
+        if (geoData && geoData.display_name) {
+          resolvedAddress = geoData.display_name;
+        }
       }
     } catch (e) {
-      console.warn('[ReverseGeocode] Lookup timed out or failed:', e.message);
+      console.warn('[ReverseGeocode] Nominatim timed out or failed:', e.message);
     }
+
+    // 2. Secondary fallback lookup: BigDataCloud Reverse Geocoding API
+    if (!resolvedAddress || isGenericAddress) {
+      try {
+        const bdcRes = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${location.lat}&longitude=${location.lng}&localityLanguage=en`);
+        if (bdcRes.ok) {
+          const bdcData = await bdcRes.json();
+          const parts = [bdcData.locality, bdcData.city, bdcData.principalSubdivision, bdcData.postcode, bdcData.countryName].filter(Boolean);
+          if (parts.length > 0) {
+            resolvedAddress = parts.join(', ');
+          }
+        }
+      } catch (bdcErr) {
+        console.warn('[ReverseGeocode] BigDataCloud fallback failed:', bdcErr.message);
+      }
+    }
+  }
+
+  if (!resolvedAddress && location && location.lat && location.lng) {
+    resolvedAddress = `GPS Location: ${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}`;
   }
 
   const isRelay = safeEmail.toLowerCase() !== PRIMARY_OWNER_EMAIL.toLowerCase();
@@ -119,13 +147,20 @@ const sendEmergencyEmail = async (contactEmail, location, userName, userPhone, p
       </div>
       ` : ''}
 
-      <div style="margin: 20px 0; text-align: center;">
-        <a href="${mapsLink}" style="display: inline-block; background-color: #2563eb; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-          📍 Open Live Navigation in Google Maps
+      <div style="margin: 22px 0; text-align: center;">
+        <a href="${directionsLink}" style="display: inline-block; background-color: #dc2626; color: #ffffff; padding: 14px 28px; border-radius: 10px; text-decoration: none; font-weight: bold; font-size: 16px; box-shadow: 0 4px 10px rgba(220, 38, 38, 0.35); margin-bottom: 10px;">
+          📍 Get Live Turn-by-Turn Directions to Victim
+        </a>
+        <br/>
+        <a href="${mapsLink}" style="color: #2563eb; font-weight: 600; font-size: 14px; text-decoration: underline;">
+          🗺️ View Exact Location Pin on Google Maps
         </a>
       </div>
 
-      <p style="font-size: 13px; color: #64748b; margin: 10px 0;"><strong>GPS Coordinates:</strong> ${location ? `${location.lat}, ${location.lng}` : 'Unavailable'}</p>
+      <div style="background: #f1f5f9; border-radius: 8px; padding: 10px 14px; margin-top: 14px;">
+        <p style="font-size: 13px; color: #475569; margin: 2px 0;"><strong>Exact GPS Coordinates:</strong> ${location ? `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}` : 'Unavailable'}</p>
+        <p style="font-size: 13px; color: #475569; margin: 2px 0;"><strong>Directions Route Target:</strong> <a href="${directionsLink}" style="color: #0284c7;">Open Directions</a></p>
+      </div>
 
       <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
       <p style="color: #94a3b8; font-size: 12px; margin: 0; text-align: center;">

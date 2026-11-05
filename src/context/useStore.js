@@ -390,7 +390,9 @@ export const useStore = create((set, get) => {
     },
 
     sendDirectGuardianEmail: (contact, customReason = null) => {
-      const location = get().currentLocation;
+      const location = get().lastKnownLocation || get().emergencyData?.location || (() => {
+        try { return JSON.parse(localStorage.getItem('sentinel_last_coords')); } catch (e) { return null; }
+      })();
       const userName = get().currentUser?.name || 'Citizen';
       const userPhone = get().currentUser?.phone || '';
       const email = contact?.email || '';
@@ -398,33 +400,45 @@ export const useStore = create((set, get) => {
         console.warn('No email provided for guardian dispatch');
         return false;
       }
-      const locStr = location?.lat ? `https://maps.google.com/?q=${location.lat},${location.lng}` : 'Location unavailable';
+      const physicalAddress = get().emergencyData?.physicalAddress || 'Acquiring GPS location...';
+      const mapsPin = location?.lat ? `https://maps.google.com/?q=${location.lat},${location.lng}` : 'Location unavailable';
+      const directionsUrl = location?.lat ? `https://www.google.com/maps/dir/?api=1&destination=${location.lat},${location.lng}` : mapsPin;
       const reason = customReason || get().emergencyData?.reason || 'EMERGENCY SOS DISTRESS TRIGGERED';
-      const subject = encodeURIComponent(`🚨 EMERGENCY SOS ALERT: ${userName} may be in danger!`);
+      const subject = encodeURIComponent(`🚨 EMERGENCY SOS ALERT: ${userName} needs immediate assistance!`);
       const body = encodeURIComponent(
         `🚨 STREETSENTINEL EMERGENCY DISTRESS ALERT 🚨\n\n` +
-        `User: ${userName}\n` +
-        `Phone: ${userPhone}\n` +
+        `Victim: ${userName}\n` +
+        `Contact Phone: ${userPhone || 'Not provided'}\n` +
         `Distress Reason: ${reason}\n\n` +
-        `LIVE GPS LOCATION:\n${locStr}\n\n` +
+        `📍 PHYSICAL STREET ADDRESS:\n${physicalAddress}\n\n` +
+        `🧭 LIVE TURN-BY-TURN DIRECTIONS:\n${directionsUrl}\n\n` +
+        `🗺️ PIN LOCATION MAP:\n${mapsPin}\n\n` +
+        `Exact GPS: ${location?.lat ? `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}` : 'Coordinates pending'}\n` +
         `Timestamp: ${new Date().toLocaleString()}\n\n` +
-        `Possible distress detected. Please contact immediately or dispatch emergency assistance!`
+        `CRITICAL: Please check on ${userName} immediately or dispatch emergency assistance!`
       );
       window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
       return true;
     },
 
     sendDirectGuardianWhatsApp: (contact, customReason = null) => {
-      const location = get().currentLocation;
+      const location = get().lastKnownLocation || get().emergencyData?.location || (() => {
+        try { return JSON.parse(localStorage.getItem('sentinel_last_coords')); } catch (e) { return null; }
+      })();
       const userName = get().currentUser?.name || 'Citizen';
       const phone = (contact?.phone || '').replace(/[^0-9]/g, '');
-      const locStr = location?.lat ? `https://maps.google.com/?q=${location.lat},${location.lng}` : 'Location unavailable';
+      const physicalAddress = get().emergencyData?.physicalAddress || '';
+      const mapsPin = location?.lat ? `https://maps.google.com/?q=${location.lat},${location.lng}` : 'Location unavailable';
+      const directionsUrl = location?.lat ? `https://www.google.com/maps/dir/?api=1&destination=${location.lat},${location.lng}` : mapsPin;
       const reason = customReason || get().emergencyData?.reason || 'EMERGENCY SOS TRIGGERED';
+      const addressLine = physicalAddress ? `*Physical Address:* ${physicalAddress}\n` : '';
       const text = encodeURIComponent(
         `🚨 *STREETSENTINEL EMERGENCY ALERT* 🚨\n\n` +
         `*${userName}* needs immediate help!\n` +
         `*Reason:* ${reason}\n` +
-        `*Live GPS:* ${locStr}\n` +
+        addressLine +
+        `*📍 Turn-by-Turn Navigation:* ${directionsUrl}\n` +
+        `*🗺️ Pin Map:* ${mapsPin}\n` +
         `*Timestamp:* ${new Date().toLocaleTimeString()}\n\nPlease respond or send assistance immediately!`
       );
       const url = phone ? `https://wa.me/${phone}?text=${text}` : `https://api.whatsapp.com/send?text=${text}`;
@@ -590,20 +604,39 @@ export const useStore = create((set, get) => {
         }
         const locationUrl = `https://maps.google.com/?q=${finalCoords.lat},${finalCoords.lng}`;
 
-        // Reverse geocode to physical street address
-        let physicalAddress = 'Chennai, Tamil Nadu';
+        // Reverse geocode to physical street address (BigDataCloud client CORS API + Nominatim fallback)
+        let physicalAddress = null;
         try {
-          const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${finalCoords.lat}&lon=${finalCoords.lng}&format=json`, {
-            headers: { 'Accept-Language': 'en' }
-          });
-          if (geoRes.ok) {
-            const geoData = await geoRes.json();
-            if (geoData?.display_name) {
-              physicalAddress = geoData.display_name;
+          const bdcRes = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${finalCoords.lat}&longitude=${finalCoords.lng}&localityLanguage=en`);
+          if (bdcRes.ok) {
+            const bdcData = await bdcRes.json();
+            const parts = [bdcData.locality, bdcData.city, bdcData.principalSubdivision, bdcData.postcode, bdcData.countryName].filter(Boolean);
+            if (parts.length > 0) {
+              physicalAddress = parts.join(', ');
             }
           }
         } catch (e) {
-          console.warn('Reverse geocode in store failed:', e);
+          console.warn('Client BigDataCloud reverse geocode failed:', e);
+        }
+
+        if (!physicalAddress) {
+          try {
+            const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${finalCoords.lat}&lon=${finalCoords.lng}&format=json`, {
+              headers: { 'Accept-Language': 'en' }
+            });
+            if (geoRes.ok) {
+              const geoData = await geoRes.json();
+              if (geoData?.display_name) {
+                physicalAddress = geoData.display_name;
+              }
+            }
+          } catch (e) {
+            console.warn('Reverse geocode in store failed:', e);
+          }
+        }
+
+        if (!physicalAddress) {
+          physicalAddress = `Lat: ${finalCoords.lat.toFixed(5)}, Lng: ${finalCoords.lng.toFixed(5)}`;
         }
 
         // Photo capture logic completely removed as requested

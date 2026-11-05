@@ -318,10 +318,17 @@ const EmergencyOverlay = () => {
               )}
             </div>
 
-            <p className="text-red-400 text-sm font-bold uppercase tracking-widest animate-pulse">
-              <MapPin size={16} className="inline mr-1" />
-              Location actively transmitting to Guardian Network
-            </p>
+            <div className="flex flex-col items-center gap-1.5 mt-1">
+              <p className="text-red-400 text-sm font-bold uppercase tracking-widest animate-pulse">
+                <MapPin size={16} className="inline mr-1" />
+                Location actively transmitting to Guardian Network
+              </p>
+              {emergencyData?.physicalAddress && (
+                <div className="bg-black/50 border border-red-500/30 rounded-xl px-4 py-2 max-w-md text-xs text-slate-200">
+                  <span className="text-red-400 font-bold">📍 Physical Address:</span> {emergencyData.physicalAddress}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Floating Chat Widget — renders on top of emergency overlay */}

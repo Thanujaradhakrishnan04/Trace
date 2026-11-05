@@ -1,5 +1,5 @@
 // Service Worker for StreetSentinel
-const CACHE_NAME = 'streetsentinel-v1';
+const CACHE_NAME = 'streetsentinel-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -31,7 +31,7 @@ self.addEventListener('activate', (e) => {
   self.clients.claim();
 });
 
-// Cache-first strategy for static assets
+// Cache strategy: Network-First for HTML navigation, Cache-First for static assets
 self.addEventListener('fetch', (e) => {
   // Avoid interception of external APIs or database auth routes
   if (
@@ -43,6 +43,23 @@ self.addEventListener('fetch', (e) => {
   ) {
     return;
   }
+
+  // HTML navigation requests: Network-First so users always get the latest deployment
+  if (e.request.mode === 'navigate') {
+    e.respondWith(
+      fetch(e.request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(e.request).then(cached => cached || caches.match('/index.html')))
+    );
+    return;
+  }
+
   e.respondWith(
     caches.match(e.request).then((cachedResponse) => {
       return cachedResponse || fetch(e.request);
@@ -84,14 +101,12 @@ self.addEventListener('notificationclick', (e) => {
 
   e.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      // Check if there is already a window open
       for (let i = 0; i < windowClients.length; i++) {
         const client = windowClients[i];
         if (client.url.includes(urlToOpen) && 'focus' in client) {
           return client.focus();
         }
       }
-      // If not, open a new window
       if (self.clients.openWindow) {
         return self.clients.openWindow(urlToOpen);
       }

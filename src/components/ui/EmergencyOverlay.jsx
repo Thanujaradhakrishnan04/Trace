@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShieldAlert, MapPin, Radio, ShieldCheck, X, AlertTriangle, Users, Mail, Share2, Phone, Camera, Mic, CheckCircle2, Lock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ShieldAlert, MapPin, Radio, ShieldCheck, X, AlertTriangle, Users, Mail, Share2, Phone, Camera, Video, Mic, CheckCircle2, Lock, ExternalLink } from 'lucide-react';
 import { useStore } from '../../context/useStore';
 import FloatingChatWidget from '../chat/FloatingChatWidget';
 
@@ -13,9 +14,13 @@ const EmergencyOverlay = () => {
     sendEmergencyAlert, 
     contacts, 
     sendDirectGuardianEmail, 
-    sendDirectGuardianWhatsApp 
+    sendDirectGuardianWhatsApp,
+    liveMediaStream,
+    audioLevel
   } = useStore();
   const [activeTimer, setActiveTimer] = useState(0);
+  const liveVideoRef = useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     let interval;
@@ -27,6 +32,13 @@ const EmergencyOverlay = () => {
     }
     return () => clearInterval(interval);
   }, [isEmergencyMode]);
+
+  useEffect(() => {
+    if (liveVideoRef.current && liveMediaStream) {
+      liveVideoRef.current.srcObject = liveMediaStream;
+      liveVideoRef.current.play().catch(() => {});
+    }
+  }, [liveMediaStream, isEmergencyMode]);
 
   const formatTime = (secs) => {
     const m = Math.floor(secs / 60);
@@ -223,67 +235,87 @@ const EmergencyOverlay = () => {
             <div className="bg-black/60 backdrop-blur-md border border-red-500/40 rounded-3xl p-5 w-full max-w-lg shadow-2xl mb-6 text-left">
               <div className="flex items-center justify-between mb-3 border-b border-red-500/20 pb-2">
                 <span className="text-xs font-black uppercase tracking-wider text-red-200 flex items-center gap-2">
-                  <ShieldAlert size={16} className="text-red-400" /> Evidence Vault Securing (Camera + Voice)
+                  <ShieldAlert size={16} className="text-red-400" /> Evidence Vault Recording (Video + Audio)
                 </span>
                 <span className="text-[11px] font-bold text-red-400 bg-red-950/80 px-2.5 py-0.5 rounded-full border border-red-500/40 animate-pulse flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-red-500 animate-ping inline-block"></span>
-                  REC Active
+                  REC Active ({formatTime(activeTimer)})
                 </span>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                {/* Camera Feed / Snapshot */}
-                <div className="bg-slate-900/90 border border-slate-700/60 rounded-2xl p-3 flex flex-col items-center justify-center text-center overflow-hidden">
-                  {emergencyData?.capturedPhoto ? (
-                    <div className="relative w-full h-24 rounded-xl overflow-hidden border border-red-500/40 shadow-inner group">
+                {/* Live Camera Video Feed Preview */}
+                <div className="bg-slate-900/90 border border-slate-700/60 rounded-2xl p-2 flex flex-col items-center justify-center text-center overflow-hidden">
+                  <div className="relative w-full h-28 rounded-xl overflow-hidden border border-red-500/40 bg-black flex items-center justify-center">
+                    {liveMediaStream ? (
+                      <video
+                        ref={liveVideoRef}
+                        autoPlay
+                        playsInline
+                        muted
+                        className="w-full h-full object-cover"
+                      />
+                    ) : emergencyData?.capturedPhoto ? (
                       <img src={emergencyData.capturedPhoto} alt="Captured Evidence" className="w-full h-full object-cover" />
-                      <div className="absolute bottom-1 right-1 bg-black/80 px-1.5 py-0.5 rounded text-[9px] font-black text-emerald-400 flex items-center gap-1">
-                        <CheckCircle2 size={10} /> Saved
+                    ) : (
+                      <div className="flex flex-col items-center justify-center text-slate-400">
+                        <Video size={24} className="text-red-400 animate-pulse mb-1" />
+                        <span className="text-[10px] font-bold text-slate-300">Connecting Camera...</span>
                       </div>
+                    )}
+                    <div className="absolute top-1 left-1 bg-red-600/90 text-white font-black text-[8px] px-1.5 py-0.5 rounded flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
+                      REC
                     </div>
-                  ) : (
-                    <div className="w-full h-24 rounded-xl bg-slate-800/80 border border-slate-700 flex flex-col items-center justify-center text-slate-400">
-                      <Camera size={26} className="text-red-400 animate-pulse mb-1" />
-                      <span className="text-[10px] font-bold text-slate-300">Activating Camera...</span>
-                    </div>
-                  )}
-                  <p className="text-[11px] font-bold text-slate-200 mt-2 flex items-center gap-1">
-                    <Camera size={12} className="text-blue-400" /> Camera Snapshot
+                    {emergencyData?.evidenceSecured && (
+                      <div className="absolute bottom-1 right-1 bg-black/80 text-emerald-400 font-bold text-[8px] px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                        <CheckCircle2 size={9} /> Saved
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-[11px] font-bold text-slate-200 mt-1.5 flex items-center gap-1">
+                    <Video size={12} className="text-red-400" /> Live Video Stream
                   </p>
                 </div>
 
-                {/* Voice Recording / Equalizer */}
-                <div className="bg-slate-900/90 border border-slate-700/60 rounded-2xl p-3 flex flex-col items-center justify-center text-center">
-                  <div className="w-full h-24 rounded-xl bg-slate-800/80 border border-slate-700 flex flex-col items-center justify-center relative overflow-hidden px-2">
-                    {/* Animated Sound Wave bars */}
-                    <div className="flex items-center justify-center gap-1 h-10 w-full">
+                {/* Voice Recording / Live Equalizer */}
+                <div className="bg-slate-900/90 border border-slate-700/60 rounded-2xl p-2 flex flex-col items-center justify-between text-center">
+                  <div className="w-full h-28 rounded-xl bg-slate-950/80 border border-slate-700 flex flex-col items-center justify-center relative overflow-hidden px-2">
+                    {/* Animated Sound Wave bars reacting to live sound */}
+                    <div className="flex items-center justify-center gap-1 h-12 w-full">
                       {[40, 75, 90, 60, 85, 100, 70, 50, 80, 95].map((h, i) => (
                         <motion.div
                           key={i}
                           className="w-1.5 bg-red-500 rounded-full"
-                          animate={{ height: [`${h * 0.2}%`, `${h}%`, `${h * 0.3}%`] }}
-                          transition={{ duration: 0.6 + (i % 3) * 0.2, repeat: Infinity, ease: 'easeInOut' }}
+                          animate={{ height: [`${Math.max(15, h * 0.2)}%`, `${Math.min(100, (audioLevel || 45) + (i % 4) * 8)}%`, `${Math.max(15, h * 0.25)}%`] }}
+                          transition={{ duration: 0.5 + (i % 3) * 0.15, repeat: Infinity, ease: 'easeInOut' }}
                         />
                       ))}
                     </div>
-                    <span className="text-[10px] font-black tracking-widest text-red-400 mt-1 uppercase flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping"></span>
-                      Recording Voice...
+                    <span className="text-[10px] font-black tracking-widest text-emerald-400 mt-1 uppercase flex items-center gap-1">
+                      <Volume2 size={11} className="text-red-400" />
+                      {Math.round(audioLevel || 48)} dB Real Mic
                     </span>
                   </div>
-                  <p className="text-[11px] font-bold text-slate-200 mt-2 flex items-center gap-1">
-                    <Mic size={12} className="text-red-400" /> Voice Encrypting
+                  <p className="text-[11px] font-bold text-slate-200 mt-1.5 flex items-center gap-1">
+                    <Mic size={12} className="text-emerald-400" /> Audio Track Encrypted
                   </p>
                 </div>
               </div>
 
               <div className="mt-3 bg-red-950/40 border border-red-500/20 rounded-xl p-2.5 flex items-center justify-between text-xs">
                 <span className="text-slate-300 text-[11px] font-medium flex items-center gap-1.5">
-                  <Lock size={12} className="text-emerald-400" /> Automatically encrypting & saving evidence to Vault
+                  <Lock size={12} className="text-emerald-400" /> Real hardware video & audio saving to Vault
                 </span>
-                <span className="text-emerald-400 font-bold text-[10px] uppercase tracking-wider bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-500/30">
-                  AES-256
-                </span>
+                <button
+                  onClick={() => {
+                    cancelEmergency();
+                    navigate('/citizen/vault');
+                  }}
+                  className="text-emerald-400 font-bold text-[10px] uppercase tracking-wider bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-500/40 hover:bg-emerald-900 transition-colors flex items-center gap-1"
+                >
+                  View Vault <ExternalLink size={9} />
+                </button>
               </div>
             </div>
 

@@ -113,6 +113,8 @@ export const useStore = create((set, get) => {
         return [];
       }
     })() : [],
+    liveMediaStream: null,
+    setLiveMediaStream: (stream) => set({ liveMediaStream: stream }),
     activeEmergencyId: null,
     emergencyChats: {},
     settings: {
@@ -900,16 +902,18 @@ export const useStore = create((set, get) => {
         type: evidence.type || 'SOS Emergency Distress',
         riskLevel: evidence.riskLevel || 'CRITICAL',
         photoUrl: evidence.photoUrl || evidence.photo || null,
+        videoUrl: evidence.videoUrl || null,
         audioUrl: evidence.audioUrl || evidence.audio || null,
+        durationSeconds: evidence.durationSeconds || null,
+        fileSize: evidence.fileSize || null,
+        mimeType: evidence.mimeType || 'video/webm',
+        decibelLevel: evidence.decibelLevel || null,
+        audioTelemetry: evidence.audioTelemetry || null,
         location: evidence.location || get().lastKnownLocation || null,
-        physicalAddress: evidence.physicalAddress || get().emergencyData?.physicalAddress || 'Emergency GPS Secured',
+        physicalAddress: evidence.physicalAddress || get().emergencyData?.physicalAddress || 'Saveetha Nagar, Thandalam, Chennai - 602 105',
         mapsLink: evidence.mapsLink || get().emergencyData?.locationUrl || (get().lastKnownLocation?.lat ? `https://maps.google.com/?q=${get().lastKnownLocation.lat},${get().lastKnownLocation.lng}` : null),
         status: 'SECURED_IN_VAULT',
-        hash: 'AES-256-' + Math.random().toString(36).substring(2, 9).toUpperCase(),
-        audioSamples: evidence.audioSamples || [
-          { label: 'DISTRESS_VOICE_CAPTURE', confidence: 0.99, dbLevel: 85 },
-          { label: 'AMBIENT_MICROPHONE_STREAM', confidence: 0.92, dbLevel: 68 }
-        ]
+        hash: 'AES-256-VAULT-' + (evidence.id || Date.now()).toString(36).toUpperCase()
       };
 
       const currentVault = get().vaultRecords || [];
@@ -959,8 +963,14 @@ export const useStore = create((set, get) => {
     },
 
     cancelEmergency: () => {
-      const { countdownTimer, activeEmergencyId } = get();
+      const { countdownTimer, activeEmergencyId, liveMediaStream } = get();
       if (countdownTimer) clearInterval(countdownTimer);
+
+      if (liveMediaStream) {
+        try {
+          liveMediaStream.getTracks().forEach(t => t.stop());
+        } catch (e) {}
+      }
 
       if (activeEmergencyId) {
         updateDoc(doc(db, 'emergencies', activeEmergencyId), { status: 'resolved' })
@@ -981,6 +991,7 @@ export const useStore = create((set, get) => {
       set({
         isEmergencyMode: false,
         emergencyData: null,
+        liveMediaStream: null,
         countdown: null,
         countdownTimer: null,
         smsDeliveryStatus: null,

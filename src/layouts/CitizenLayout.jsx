@@ -4,7 +4,6 @@ import { Home, ShieldAlert, Navigation, User, Bell, Menu, X, Shield, PhoneCall, 
 import { useStore } from '../context/useStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import FloatingChatWidget from '../components/chat/FloatingChatWidget';
-import AISnapshotModule from '../components/emergency/AISnapshotModule';
 
 const CitizenLayout = () => {
   const navigate = useNavigate();
@@ -131,8 +130,7 @@ const CitizenLayout = () => {
       <FloatingChatWidget />
 
       {/* Headless AI Snapshot Module */}
-      <AISnapshotModule />
-
+      
       {/* Bottom Navigation */}
       <div className="flex-shrink-0 bg-white border-t border-slate-100 z-30 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
         <div className="flex justify-around items-center px-2 pt-2 pb-4 max-w-lg mx-auto">

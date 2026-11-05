@@ -79,11 +79,11 @@ const EmergencyOverlay = () => {
   };
 
   const primaryGuardianEmail = 'thanujaradhakrishnan04@gmail.com';
-  const displayContacts = contacts && contacts.length > 0 
-    ? (contacts.some(c => (c.email || '').toLowerCase() === primaryGuardianEmail.toLowerCase())
-        ? contacts 
-        : [{ id: 'primary_guardian_default', name: 'Primary Guardian', email: primaryGuardianEmail, relation: 'Verified Guardian' }, ...contacts])
-    : [{ id: 'primary_guardian_default', name: 'Primary Guardian', email: primaryGuardianEmail, relation: 'Verified Guardian' }];
+  const safeContacts = (contacts || []).filter(c => c && typeof c === 'object');
+  const hasPrimaryGuardian = safeContacts.some(c => (c.email || '').toLowerCase() === primaryGuardianEmail.toLowerCase());
+  const displayContacts = hasPrimaryGuardian 
+    ? safeContacts 
+    : [{ id: 'primary_guardian_default', name: 'Primary Guardian', email: primaryGuardianEmail, relation: 'Verified Guardian' }, ...safeContacts];
 
   return (
     <AnimatePresence>

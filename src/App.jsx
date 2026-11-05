@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 import { SimulationProvider } from './context/SimulationContext';
 import { useStore } from './context/useStore';
 import { WifiOff } from 'lucide-react';
@@ -52,10 +53,12 @@ function App() {
     // Proactively wake up Render backend in background to prevent cold-start delays
     fetch('https://street-patrol-y9p7.onrender.com/emergency/health', { mode: 'cors' }).catch(() => {});
 
-    // Request Notification permission on startup
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
+    // Request Notification permission safely on startup
+    try {
+      if ('Notification' in window && typeof Notification.requestPermission === 'function' && Notification.permission === 'default') {
+        Notification.requestPermission().catch(() => {});
+      }
+    } catch (e) {}
 
     const handleOnline = () => setOfflineStatus(false);
     const handleOffline = () => setOfflineStatus(true);
@@ -102,9 +105,11 @@ function App() {
     };
   }, [setOfflineStatus]);
 
+  const appBasename = Capacitor.isNativePlatform() ? '/' : (import.meta.env.BASE_URL || '/');
+
   return (
     <SimulationProvider>
-      <Router basename={import.meta.env.BASE_URL}>
+      <Router basename={appBasename}>
         <EmergencyOverlay />
         <AISnapshotModule />
         

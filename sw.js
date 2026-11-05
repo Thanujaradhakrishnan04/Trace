@@ -1,18 +1,7 @@
 // Service Worker for StreetSentinel
-const CACHE_NAME = 'streetsentinel-v2';
-const ASSETS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/favicon.svg',
-  '/icons.svg'
-];
+const CACHE_NAME = 'streetsentinel-v3';
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
-    })
-  );
   self.skipWaiting();
 });
 
@@ -39,6 +28,7 @@ self.addEventListener('fetch', (e) => {
     e.request.url.includes('firebase') || 
     e.request.url.includes('nominatim') || 
     e.request.url.includes('osrm') ||
+    e.request.url.includes('ipwho') ||
     e.request.method !== 'GET'
   ) {
     return;
@@ -55,14 +45,20 @@ self.addEventListener('fetch', (e) => {
           }
           return response;
         })
-        .catch(() => caches.match(e.request).then(cached => cached || caches.match('/index.html')))
+        .catch(() => caches.match(e.request))
     );
     return;
   }
 
   e.respondWith(
     caches.match(e.request).then((cachedResponse) => {
-      return cachedResponse || fetch(e.request);
+      return cachedResponse || fetch(e.request).then((response) => {
+        if (response.ok && e.request.url.startsWith(self.location.origin)) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+        }
+        return response;
+      });
     })
   );
 });
@@ -80,11 +76,11 @@ self.addEventListener('push', (e) => {
 
   const options = {
     body: data.body,
-    icon: '/favicon.svg',
-    badge: '/favicon.svg',
+    icon: './favicon.svg',
+    badge: './favicon.svg',
     vibrate: [200, 100, 200],
     data: {
-      url: data.url || '/'
+      url: data.url || './'
     },
     requireInteraction: true
   };
@@ -97,7 +93,7 @@ self.addEventListener('push', (e) => {
 // Handle notification click to focus or open window
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();
-  const urlToOpen = e.notification.data?.url || '/';
+  const urlToOpen = e.notification.data?.url || './';
 
   e.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {

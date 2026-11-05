@@ -41,7 +41,19 @@ class GlobalErrorBoundary extends Component {
           </p>
           <div style={{ display: 'flex', gap: '12px' }}>
             <button
-              onClick={() => window.location.href = import.meta.env.BASE_URL || '/'}
+              onClick={async () => {
+                try {
+                  if (window.caches) {
+                    const keys = await caches.keys();
+                    await Promise.all(keys.map(k => caches.delete(k)));
+                  }
+                  if (navigator.serviceWorker) {
+                    const regs = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(regs.map(r => r.unregister()));
+                  }
+                } catch (e) {}
+                window.location.href = (import.meta.env.BASE_URL || '/') + '?sync=' + Date.now();
+              }}
               style={{
                 backgroundColor: '#ef4444',
                 color: '#ffffff',
@@ -55,7 +67,19 @@ class GlobalErrorBoundary extends Component {
               Enter StreetSentinel
             </button>
             <button
-              onClick={() => window.location.reload()}
+              onClick={async () => {
+                try {
+                  if (window.caches) {
+                    const keys = await caches.keys();
+                    await Promise.all(keys.map(k => caches.delete(k)));
+                  }
+                  if (navigator.serviceWorker) {
+                    const regs = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(regs.map(r => r.unregister()));
+                  }
+                } catch (e) {}
+                window.location.reload();
+              }}
               style={{
                 backgroundColor: '#1e293b',
                 color: '#f8fafc',

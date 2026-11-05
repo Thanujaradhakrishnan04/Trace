@@ -30,9 +30,9 @@ const EvidenceVault = () => {
     // 1. First add explicit vault records
     (vaultRecords || []).forEach(rec => {
       if (rec && rec.id) {
-        // Strip out legacy mock/unsplash images
+        // Strip out legacy mock/unsplash images safely
         let cleanRec = { ...rec };
-        if (cleanRec.photoUrl && cleanRec.photoUrl.includes('unsplash.com')) {
+        if (cleanRec.photoUrl && typeof cleanRec.photoUrl === 'string' && cleanRec.photoUrl.includes('unsplash.com')) {
           cleanRec.photoUrl = null;
         }
         map.set(cleanRec.id, cleanRec);
@@ -42,7 +42,7 @@ const EvidenceVault = () => {
     (localCached || []).forEach(rec => {
       if (rec && rec.id && !map.has(rec.id)) {
         let cleanRec = { ...rec };
-        if (cleanRec.photoUrl && cleanRec.photoUrl.includes('unsplash.com')) {
+        if (cleanRec.photoUrl && typeof cleanRec.photoUrl === 'string' && cleanRec.photoUrl.includes('unsplash.com')) {
           cleanRec.photoUrl = null;
         }
         map.set(cleanRec.id, cleanRec);
@@ -57,7 +57,7 @@ const EvidenceVault = () => {
         map.set(alert.id, { ...alert, ...existing });
       } else {
         const photo = (alert.photo || alert.photoUrl);
-        const cleanPhoto = (photo && !photo.includes('unsplash.com')) ? photo : null;
+        const cleanPhoto = (photo && typeof photo === 'string' && !photo.includes('unsplash.com')) ? photo : null;
         map.set(alert.id, {
           id: alert.id,
           timestamp: alert.timestamp || Date.now(),

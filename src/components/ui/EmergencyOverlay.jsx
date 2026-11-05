@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ShieldAlert, MapPin, Radio, ShieldCheck, X, AlertTriangle, Users, Mail, Share2, Phone, Camera, Video, Mic, CheckCircle2, Lock, ExternalLink } from 'lucide-react';
+import { ShieldAlert, MapPin, Radio, ShieldCheck, X, AlertTriangle, Users, Mail, Share2, Phone, Camera, Video, Mic, Volume2, CheckCircle2, Lock, ExternalLink } from 'lucide-react';
 import { useStore } from '../../context/useStore';
 import FloatingChatWidget from '../chat/FloatingChatWidget';
 

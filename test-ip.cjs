@@ -3,7 +3,7 @@ const body = JSON.stringify({
   emergencyId: "test_ip_123",
   reason: "Test IP",
   location: { lat: 12.0, lng: 77.0 },
-  contacts: [{ id: "1", name: "Self", phone: "999", email: "roshinielumalai12@gmail.com" }]
+  contacts: [{ id: "1", name: "Self", phone: "999", email: "thanujaradhakrishnan04@gmail.com" }]
 });
 const req = http.request({
   hostname: '192.168.0.105',

@@ -8,10 +8,10 @@ const body = JSON.stringify({
   contacts: [
     {
       id: "test_contact_1",
-      name: "Roshini",
+      name: "Thanujar",
       phone: "+919876543210",
       relation: "Self",
-      email: "roshinielumalai12@gmail.com"
+      email: "thanujaradhakrishnan04@gmail.com"
     }
   ],
   targetContactId: null,

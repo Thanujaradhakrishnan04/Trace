@@ -7,7 +7,7 @@ async function testEmail() {
         reason: 'Test from script',
         location: { lat: 12.9716, lng: 77.5946 },
         mapsLink: 'https://maps.google.com',
-        contacts: [{ email: 'roshinielumalai12@gmail.com', name: 'Test Contact' }],
+        contacts: [{ email: 'thanujaradhakrishnan04@gmail.com', name: 'Thanujar Contact' }],
         userName: 'Test User',
         userPhone: '1234567890'
       })

@@ -31,7 +31,7 @@ async function runEmergencyTests() {
     console.log("2. Logging in with test credentials...");
     const emailInput = await driver.findElement(By.css('input[type="email"]'));
     const passwordInput = await driver.findElement(By.css('input[type="password"]'));
-    await emailInput.sendKeys('roshinielumalai12@gmail.com');
+    await emailInput.sendKeys('thanujaradhakrishnan04@gmail.com');
     await passwordInput.sendKeys('123456');
     await driver.findElement(By.css('button[type="submit"]')).click();
 

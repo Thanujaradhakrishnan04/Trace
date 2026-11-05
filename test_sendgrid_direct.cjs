@@ -23,7 +23,7 @@ console.log('Sender email:', senderEmail);
 sgMail.setApiKey(apiKey);
 
 const msg = {
-  to: 'roshinielumalai12@gmail.com',
+  to: 'thanujaradhakrishnan04@gmail.com',
   from: senderEmail,
   subject: '🚨 StreetSentinel Email Test',
   text: 'This is a direct test email from StreetSentinel. If you receive this, email delivery is working!',

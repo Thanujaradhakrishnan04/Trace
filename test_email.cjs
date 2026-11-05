@@ -35,7 +35,7 @@ const auth = getAuth(app);
 
 async function testEmail() {
   try {
-    const userCredential = await signInWithEmailAndPassword(auth, "roshinielumalai12@gmail.com", "123456");
+    const userCredential = await signInWithEmailAndPassword(auth, "thanujaradhakrishnan04@gmail.com", "123456");
     console.log("Logged in. Getting token...");
     
     const idToken = await userCredential.user.getIdToken();
@@ -46,12 +46,12 @@ async function testEmail() {
       reason: "TEST ALERT",
       location: { lat: 12.9716, lng: 77.5946 },
       mapsLink: "https://maps.google.com/?q=12.9716,77.5946",
-      userName: "Roshini",
+      userName: "Thanujar",
       userPhone: "+91 98765 43210",
       contacts: [
         {
           name: "Test Contact",
-          email: "roshinielumalai12@gmail.com", 
+          email: "thanujaradhakrishnan04@gmail.com", 
           phone: "+1234567890",
           relation: "Test"
         }

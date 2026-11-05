@@ -94,7 +94,7 @@ async function runAllTests() {
       await passwordInput.clear();
       
       // Input credentials
-      await emailInput.sendKeys('roshinielumalai12@gmail.com');
+      await emailInput.sendKeys('thanujaradhakrishnan04@gmail.com');
       await passwordInput.sendKeys('123456');
       
       const submitBtn = await driver.findElement(By.css('button[type="submit"]'));
@@ -258,7 +258,7 @@ async function runAllTests() {
       ["Login Validation Checks (Empty)", "Submit empty credentials and check that warnings trigger correctly.", "Validation warning 'Please enter email and password' displays.", "login_validation_empty"],
       ["Login Validation Checks (Format)", "Input an invalid email format and submit form to test client-side validation.", "Browser or app blocks submission and warns about invalid format."],
       ["Login Wrong Credentials Error", "Attempt login with valid email format but incorrect password.", "Displays Firebase Auth credentials mismatch error."],
-      ["Login Success Flow", "Login using credentials roshinielumalai12@gmail.com and password 123456.", "Access granted, user details retrieved, and redirects to dashboard.", "login_success"],
+      ["Login Success Flow", "Login using credentials thanujaradhakrishnan04@gmail.com and password 123456.", "Access granted, user details retrieved, and redirects to dashboard.", "login_success"],
       ["Firebase Token Verification", "Verify frontend correctly obtains JWT token from Firebase Auth after sign-in.", "Token is stored securely in application state."],
       ["Access Control (Citizen to Police)", "Directly browse to /police/home as citizen and verify it redirects.", "Redirects back to /citizen/home (role unauthorized)."],
       ["Access Control (Citizen to Admin)", "Directly browse to /admin/home as citizen and verify it redirects.", "Redirects back to /citizen/home (role unauthorized)."],
@@ -299,7 +299,7 @@ async function runAllTests() {
       ["Dashboard UI Layout Grid", "Check that top bar, quick actions, metric cards, and map render in correct layout.", "Layout is responsive and aligned correctly.", "dashboard_load"],
       ["Top Bar Title branding check", "Verify 'STREET SENTINEL' branding exists in the header.", "Header logo text is visible and styled."],
       ["Time-based Greeting verify", "Check that time-based greeting updates correctly (Good Morning/Afternoon/Evening).", "Greeting text matches current local system time."],
-      ["User Profile Name verify", "Check that the authenticated user's legal name is shown in dashboard.", "Displays name: Roshini."],
+      ["User Profile Name verify", "Check that the authenticated user's legal name is shown in dashboard.", "Displays name: Thanujar."],
       ["Threat Level Badge verify", "Check threat risk pill (LOW RISK, MEDIUM RISK, HIGH RISK) on home screen.", "Risk badge is colored appropriately (green for LOW, red for HIGH)."],
       ["AI Status Banner verify", "Verify that AI status message indicates active monitoring status.", "Displays message: 'Sentinel AI active. Environment stable.'"],
       ["ARM/DISARM button toggle", "Toggle protection button to activate/deactivate mic monitoring.", "Button state changes color and triggers audio listener hook."],
@@ -427,7 +427,7 @@ async function runAllTests() {
       ["SMS Delivery status update check", "Verify that SMS status logs success in store state.", "Store smsDeliveryStatus updates to SUCCESS on API return."],
       ["Email Delivery status update check", "Verify email status logs success in store state.", "Store email status updates to SUCCESS on API return."],
       ["Firestore Dispatch logging validation", "Verify alert document is written to user's Firestore alerts collection.", "Firestore subcollection gets new document with timestamp."],
-      ["Twilio SMS Dispatch Trigger", "Verify Twilio SMS is sent during emergency mode.", "SMS delivered containing Roshini location link coordinates."],
+      ["Twilio SMS Dispatch Trigger", "Verify Twilio SMS is sent during emergency mode.", "SMS delivered containing Thanujar location link coordinates."],
       ["Nodemailer Gmail SMTP Fallback", "Verify Nodemailer falls back to Gmail SMTP on API credentials errors.", "Sends email successfully using backup SMTP transport configurations."],
       ["WhatsApp Web Notification redirect", "Verify WhatsApp dispatch opens WhatsApp web in new tab.", "Opens web.whatsapp.com with pre-populated message parameters."],
       ["Emergency SMS Multi-contact delivery", "Add 3 contacts and trigger SOS.", "All 3 contacts receive individual SMS alerts."],
@@ -438,7 +438,7 @@ async function runAllTests() {
       ["Notification delivery error display", "Simulate Twilio account balance exhaustion.", "Alert status pill changes to 'SMS FAIL' and shows explanation."],
       ["WhatsApp notification dispatch failure", "Block popup window for WhatsApp redirect link.", "Browser warns popup blocked; app shows click trigger helper link."],
       ["Push notification dispatch to police", "Trigger emergency alert as citizen.", "Nearby police dashboard receives audio ding and flash popup alert."],
-      ["Email notifications formatting constraints", "Check header subject on received alert email.", "Subject reads 'URGENT: Roshini is in an emergency'."],
+      ["Email notifications formatting constraints", "Check header subject on received alert email.", "Subject reads 'URGENT: Thanujar is in an emergency'."],
       ["Twilio SMS E.164 number formatting", "Check recipient phone number validation on Twilio.", "Numbers are prefixed with country code before Twilio API calls."],
       ["SMTP credentials secure initialization", "Verify SMTP connector setups on startup.", "Server logs 'SMTP transport configured successfully'."],
       ["Alert dispatch timing tracking", "Check latency between emergency trigger and dispatch completion.", "Dispatch completing logs duration (average less than 2 seconds)."],

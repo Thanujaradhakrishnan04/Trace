@@ -27,7 +27,7 @@ class BackendApiTest {
             "location" to mapOf("lat" to location.lat, "lng" to location.lng),
             "mapsLink" to "https://maps.google.com/?q=13.0827,80.2707",
             "contacts" to contacts,
-            "userName" to "Roshini E",
+            "userName" to "Thanujar R",
             "userPhone" to "+919876543210"
         )
         val jsonString = gson.toJson(bodyMap)

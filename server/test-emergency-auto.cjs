@@ -28,7 +28,7 @@ async function runAutoTests() {
     const mockLocation = { lat: 13.0827, lng: 80.2707 };
     const mockUser = 'AutoTest Citizen';
     const mockPhone = '+919876543210';
-    const testEmail = process.env.EMAIL_USER || 'roshinielumalai12@gmail.com';
+    const testEmail = process.env.EMAIL_USER || 'thanujaradhakrishnan04@gmail.com';
 
     const startTime = Date.now();
     const result = await sendEmergencyEmail(testEmail, mockLocation, mockUser, mockPhone, null);

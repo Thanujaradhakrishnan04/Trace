@@ -222,7 +222,41 @@ const sendEmergencyEmail = async (contactEmail, location, userName, userPhone, p
     }
   }
 
-  // ── Strategy 3: Gmail SMTP (Direct port 587 with STARTTLS) ───────────────────
+  // ── Strategy 3: EmailJS HTTPS REST API (Port 443 — sends to any recipient via connected Gmail) ──
+  if (process.env.EMAILJS_SERVICE_ID && process.env.EMAILJS_TEMPLATE_ID && process.env.EMAILJS_PUBLIC_KEY) {
+    try {
+      const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          service_id: process.env.EMAILJS_SERVICE_ID,
+          template_id: process.env.EMAILJS_TEMPLATE_ID,
+          user_id: process.env.EMAILJS_PUBLIC_KEY,
+          accessToken: process.env.EMAILJS_PRIVATE_KEY || undefined,
+          template_params: {
+            to_email: safeEmail,
+            to_name: safeContactName,
+            victim_name: safeName,
+            victim_phone: safePhone,
+            physical_address: resolvedAddress || 'GPS Coordinates Available',
+            maps_link: mapsLink,
+            timestamp: new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })
+          }
+        })
+      });
+      if (res.ok) {
+        console.log(`[Email][EmailJS] Emergency email delivered directly to guardian ${maskEmail(safeEmail)}`);
+        return { success: true, messageId: `emailjs_${Date.now()}`, provider: 'emailjs' };
+      } else {
+        const errText = await res.text();
+        console.warn(`[Email][EmailJS] Error:`, errText);
+      }
+    } catch (ejsErr) {
+      console.warn(`[Email][EmailJS] Dispatch failed:`, ejsErr.message);
+    }
+  }
+
+  // ── Strategy 4: Gmail SMTP (Direct port 587 with STARTTLS) ───────────────────
   try {
     const mailOptions = {
       from: `"${safeName} via StreetSentinel" <${process.env.EMAIL_USER || PRIMARY_OWNER_EMAIL}>`,

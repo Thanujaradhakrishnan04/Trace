@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">StreetSentinel</string>
+    <string name="title_activity_main">StreetSentinel</string>
+    <string name="package_name">com.streetsentinel.app</string>
+    <string name="custom_url_scheme">com.streetsentinel.app</string>
+</resources>

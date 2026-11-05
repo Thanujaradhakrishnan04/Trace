@@ -28,19 +28,26 @@ const EmergencySOS = () => {
   };
 
   const handleShareLocation = () => {
+    const coords = useStore.getState().lastKnownLocation || { lat: 13.0265143, lng: 80.0159234 };
+    const url = `https://maps.google.com/?q=${coords.lat},${coords.lng}`;
+    
+    // Instantly fire the emergency dispatch bypassing any countdown
+    sendEmergencyAlert('Manual SOS — Shared Location', coords);
+
+    try {
+      navigator.share?.({ title: 'My Emergency Location', url }) ?? window.open(url, '_blank');
+    } catch (e) {}
+
+    // In background, refine GPS without blocking
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition((pos) => {
-        const url = `https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`;
-        navigator.share?.({ title: 'My Location', url }) ?? window.open(url, '_blank');
-        
-        // Instantly fire the emergency dispatch bypassing any countdown
-        sendEmergencyAlert('Manual SOS — Shared Location', { lat: pos.coords.latitude, lng: pos.coords.longitude });
-      }, () => {
-        // Fallback if GPS fails
-        sendEmergencyAlert('Manual SOS — Shared Location (GPS Unavailable)');
-      });
-    } else {
-      sendEmergencyAlert('Manual SOS — Shared Location (GPS Disabled)');
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const fresh = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          useStore.setState({ lastKnownLocation: fresh });
+        },
+        () => {},
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 10000 }
+      );
     }
   };
 

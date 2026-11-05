@@ -47,25 +47,34 @@ const EmergencyOverlay = () => {
   };
 
   const handleSendLocation = () => {
-    if (useStore.getState().countdownTimer) {
-      clearInterval(useStore.getState().countdownTimer);
+    const store = useStore.getState();
+    if (store.countdownTimer) {
+      clearInterval(store.countdownTimer);
     }
+
+    // Instantly transition state so countdown modal disappears and emergency overlay appears
+    useStore.setState({
+      countdown: null,
+      countdownTimer: null,
+      isEmergencyMode: true
+    });
+
+    // Best known coordinates (cached GPS or verified campus default)
+    const activeCoords = store.lastKnownLocation || { lat: 13.0265143, lng: 80.0159234 };
+    
+    // Instantly trigger emergency alert and email dispatch
+    sendEmergencyAlert('Manual SOS - Send Location Override', activeCoords);
+
+    // Concurrently acquire fresh GPS in background without blocking UI
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          sendEmergencyAlert('Manual SOS - Send Location Override', {
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude
-          });
+          const fresh = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          useStore.setState({ lastKnownLocation: fresh });
         },
-        (err) => {
-          console.warn('GPS query error on Send Location Now:', err);
-          sendEmergencyAlert('Manual SOS - Send Location Override');
-        },
-        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+        (err) => console.warn('Background GPS refinement warning:', err),
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 10000 }
       );
-    } else {
-      sendEmergencyAlert('Manual SOS - Send Location Override');
     }
   };
 

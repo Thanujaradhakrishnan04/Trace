@@ -6,6 +6,7 @@ import {
   Maximize2, X, Lock, ExternalLink, ShieldCheck, Film, Info
 } from 'lucide-react';
 import { useStore } from '../../context/useStore';
+import { getAllVaultRecordsDB } from '../../utils/vaultStorage';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const EvidenceVault = () => {
@@ -15,72 +16,94 @@ const EvidenceVault = () => {
   const [selectedPhoto, setSelectedPhoto] = useState(null);
 
   useEffect(() => {
-    // Combine vaultRecords with alertHistory and localStorage cache, deduplicating by id
-    const localCached = (() => {
-      try {
-        const c = localStorage.getItem('sentinel_vault_records');
-        return c ? JSON.parse(c) : [];
-      } catch (e) {
-        return [];
-      }
-    })();
+    let isMounted = true;
 
-    const map = new Map();
+    const loadRecords = async () => {
+      // 1. Fetch from persistent IndexedDB (no 5MB storage limit)
+      const idbRecords = await getAllVaultRecordsDB();
 
-    // 1. First add explicit vault records
-    (vaultRecords || []).forEach(rec => {
-      if (rec && rec.id) {
-        // Strip out legacy mock/unsplash images safely
-        let cleanRec = { ...rec };
-        if (cleanRec.photoUrl && typeof cleanRec.photoUrl === 'string' && cleanRec.photoUrl.includes('unsplash.com')) {
-          cleanRec.photoUrl = null;
+      // 2. Fetch from LocalStorage fallback
+      const localCached = (() => {
+        try {
+          const c = localStorage.getItem('sentinel_vault_records');
+          return c ? JSON.parse(c) : [];
+        } catch (e) {
+          return [];
         }
-        map.set(cleanRec.id, cleanRec);
-      }
-    });
+      })();
 
-    (localCached || []).forEach(rec => {
-      if (rec && rec.id && !map.has(rec.id)) {
-        let cleanRec = { ...rec };
-        if (cleanRec.photoUrl && typeof cleanRec.photoUrl === 'string' && cleanRec.photoUrl.includes('unsplash.com')) {
-          cleanRec.photoUrl = null;
+      const map = new Map();
+
+      // First add IndexedDB records (richest data with real video & audio)
+      (idbRecords || []).forEach(rec => {
+        if (rec && rec.id) {
+          map.set(rec.id, rec);
         }
-        map.set(cleanRec.id, cleanRec);
-      }
-    });
+      });
 
-    // 2. Also incorporate real alertHistory items
-    (alertHistory || []).forEach(alert => {
-      if (!alert) return;
-      const existing = map.get(alert.id);
-      if (existing) {
-        map.set(alert.id, { ...alert, ...existing });
-      } else {
-        const photo = (alert.photo || alert.photoUrl);
-        const cleanPhoto = (photo && typeof photo === 'string' && !photo.includes('unsplash.com')) ? photo : null;
-        map.set(alert.id, {
-          id: alert.id,
-          timestamp: alert.timestamp || Date.now(),
-          type: alert.type || 'EMERGENCY_SOS',
-          location: alert.location,
-          physicalAddress: alert.physicalAddress || (alert.location?.lat ? `${alert.location.lat.toFixed(5)}, ${alert.location.lng.toFixed(5)}` : null),
-          mapsLink: alert.mapsLink || (alert.location?.lat ? `https://maps.google.com/?q=${alert.location.lat},${alert.location.lng}` : null),
-          riskLevel: alert.riskLevel || 'CRITICAL',
-          photoUrl: cleanPhoto,
-          videoUrl: alert.videoUrl || null,
-          audioUrl: alert.audioUrl || alert.audioData || null,
-          durationSeconds: alert.durationSeconds || null,
-          fileSize: alert.fileSize || null,
-          decibelLevel: alert.decibelLevel || null,
-          status: 'SECURED_IN_VAULT',
-          hash: 'AES-256-VAULT-' + (alert.id || Date.now()).toString(36).toUpperCase()
-        });
-      }
-    });
+      // Next add explicit in-memory vault records from store
+      (vaultRecords || []).forEach(rec => {
+        if (rec && rec.id) {
+          let cleanRec = { ...rec };
+          if (cleanRec.photoUrl && typeof cleanRec.photoUrl === 'string' && cleanRec.photoUrl.includes('unsplash.com')) {
+            cleanRec.photoUrl = null;
+          }
+          const existing = map.get(cleanRec.id) || {};
+          map.set(cleanRec.id, { ...existing, ...cleanRec });
+        }
+      });
 
-    const list = Array.from(map.values());
-    list.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-    setEvidenceList(list);
+      // Next add LocalStorage records
+      (localCached || []).forEach(rec => {
+        if (rec && rec.id && !map.has(rec.id)) {
+          let cleanRec = { ...rec };
+          if (cleanRec.photoUrl && typeof cleanRec.photoUrl === 'string' && cleanRec.photoUrl.includes('unsplash.com')) {
+            cleanRec.photoUrl = null;
+          }
+          map.set(cleanRec.id, cleanRec);
+        }
+      });
+
+      // Also incorporate real alertHistory items
+      (alertHistory || []).forEach(alert => {
+        if (!alert) return;
+        const existing = map.get(alert.id);
+        if (existing) {
+          map.set(alert.id, { ...alert, ...existing });
+        } else {
+          const photo = (alert.photo || alert.photoUrl);
+          const cleanPhoto = (photo && typeof photo === 'string' && !photo.includes('unsplash.com')) ? photo : null;
+          map.set(alert.id, {
+            id: alert.id,
+            timestamp: alert.timestamp || Date.now(),
+            type: alert.type || 'EMERGENCY_SOS',
+            location: alert.location,
+            physicalAddress: alert.physicalAddress || (alert.location?.lat ? `${alert.location.lat.toFixed(5)}, ${alert.location.lng.toFixed(5)}` : null),
+            mapsLink: alert.mapsLink || (alert.location?.lat ? `https://maps.google.com/?q=${alert.location.lat},${alert.location.lng}` : null),
+            riskLevel: alert.riskLevel || 'CRITICAL',
+            photoUrl: cleanPhoto,
+            videoUrl: alert.videoUrl || null,
+            audioUrl: alert.audioUrl || alert.audioData || null,
+            durationSeconds: alert.durationSeconds || null,
+            fileSize: alert.fileSize || null,
+            decibelLevel: alert.decibelLevel || null,
+            status: 'SECURED_IN_VAULT',
+            hash: 'AES-256-VAULT-' + (alert.id || Date.now()).toString(36).toUpperCase()
+          });
+        }
+      });
+
+      if (!isMounted) return;
+      const list = Array.from(map.values());
+      list.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+      setEvidenceList(list);
+    };
+
+    loadRecords();
+
+    return () => {
+      isMounted = false;
+    };
   }, [alertHistory, vaultRecords]);
 
   const exportLog = (record) => {

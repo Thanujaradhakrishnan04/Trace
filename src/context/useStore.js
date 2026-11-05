@@ -7,6 +7,7 @@ import { Network } from '@capacitor/network';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { saveVaultRecordDB, getAllVaultRecordsDB } from '../utils/vaultStorage';
 
 export const speak = (text) => {
   if ('speechSynthesis' in window) {
@@ -919,10 +920,24 @@ export const useStore = create((set, get) => {
       const currentVault = get().vaultRecords || [];
       const updatedVault = [record, ...currentVault.filter(r => r.id !== record.id)].slice(0, 50);
 
+      // 1. Persist full record with real video & audio into IndexedDB (no 5MB size limit)
+      await saveVaultRecordDB(record);
+
+      // 2. Persist lightweight version to LocalStorage without overflowing quota
       try {
-        localStorage.setItem('sentinel_vault_records', JSON.stringify(updatedVault));
+        const lightweightVault = updatedVault.map(r => {
+          let light = { ...r };
+          if (light.videoUrl && typeof light.videoUrl === 'string' && light.videoUrl.length > 50000) {
+            light.videoUrl = '__INDEXED_DB__';
+          }
+          if (light.audioUrl && typeof light.audioUrl === 'string' && light.audioUrl.length > 50000) {
+            light.audioUrl = '__INDEXED_DB__';
+          }
+          return light;
+        });
+        localStorage.setItem('sentinel_vault_records', JSON.stringify(lightweightVault));
       } catch (e) {
-        console.warn('LocalStorage save error:', e);
+        console.warn('LocalStorage save warning:', e);
       }
 
       set({
@@ -1007,6 +1022,14 @@ export const useStore = create((set, get) => {
 });
 
 if (typeof window !== 'undefined') {
+  getAllVaultRecordsDB().then((records) => {
+    if (records && records.length > 0) {
+      useStore.setState((s) => ({
+        vaultRecords: [...records, ...(s.vaultRecords || []).filter(r => !records.some(rec => rec.id === r.id))]
+      }));
+    }
+  }).catch(() => {});
+
   Network.addListener('networkStatusChange', status => {
     useStore.getState().setOfflineStatus(!status.connected);
   });

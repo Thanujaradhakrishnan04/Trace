@@ -6,7 +6,7 @@ async function test() {
   const result = await sendEmergencyEmail(
     'thanujaradhakrishnan04@gmail.com', 
     { lat: 13.0265143, lng: 80.0159234 }, 
-    'Thanujar Radhakrishnan', 
+    'Thanuja Radhakrishnan', 
     '+919884293869'
   );
   console.log("Result:", result);
